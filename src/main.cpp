@@ -35,8 +35,15 @@ static void glfw_error_callback(int error, const char* description)
 }
 
 // Main code
+
+#define CONSOLE
+
+extern void test();
+
 int main(int, char**)
 {
+
+#ifndef CONSOLE
     glfwSetErrorCallback(glfw_error_callback);
     if (!glfwInit())
         return 1;
@@ -197,6 +204,10 @@ int main(int, char**)
 
     glfwDestroyWindow(window);
     glfwTerminate();
+
+#else
+    test();
+#endif
 
     return 0;
 }
