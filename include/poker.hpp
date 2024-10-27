@@ -31,3 +31,42 @@ static std::string value_str[] = {
 
 
 */
+
+/*
+We have multiple formats of card indexing;
+1) OrderIndexing
+2) KevIndexing
+3) BitIndexing ?
+
+*/
+
+class Card {
+
+private:
+    int suit;
+    int rank;
+
+public:
+    int getOrder();
+    int getKev();
+};
+
+// Currently assuming that player have exactly 2 cards.
+class Player {
+    Card cards[2];
+    float winProbability = -100; // Can be negative if not defined;
+};
+
+enum class BoardStage { 
+    PREFLOP = 0, 
+    FLOP = 3, 
+    TURN = 4,
+    RIVER = 5 
+};
+
+class Board {
+public:
+    BoardStage stage;
+    Card cards[5]; 
+};
+

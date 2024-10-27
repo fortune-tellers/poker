@@ -6,17 +6,7 @@ int primes[] = { 2, 3, 5, 7, 11, 13, 17, 19, 23, 29, 31, 37, 41 };
 
 int getKevByOrder(int orderNumber) {
     int suit = orderNumber % 4;
-    
-    if (suit == 0) {
-        suit = 0x8000;
-    } else if (suit == 1) {
-        suit = (0x8000 >> 1);
-    } else if (suit == 2) {
-        suit = (0x8000 >> 2);
-    } else {
-        suit = (0x8000 >> 3);
-    }
-    
+    suit = (0x8000 >> suit);
     int card = orderNumber / 4; 
 
     return primes[card] | (card << 8) | suit | (1 << (16+card));
@@ -37,4 +27,13 @@ int hand_rank(unsigned short val)
     if (val > 166)  return FULL_HOUSE;       //  156 full house
     if (val > 10)   return FOUR_OF_A_KIND;   //  156 four-kind
     return STRAIGHT_FLUSH;                   //   10 straight-flushes
+}
+
+int Card::getOrder() {
+    return rank * 4 + suit;
+}
+
+int Card::getKev() {
+    int csuit = (0x8000 >> suit);
+    return primes[rank] | (rank << 8) | suit | (1 << (16+rank));
 }

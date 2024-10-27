@@ -28,6 +28,7 @@ target_include_directories(imgui PUBLIC thirdparty/imgui thirdparty/glfw/include
 add_executable(poker src/main.cpp 
     src/tester.cpp
     src/pokerlib.cpp
+    src/Controller.cpp
     src/5cardHandEvaluator/5cardHandEvaluator.cpp
     src/7cardHandEvaluator/7cardHandEvaluator.cpp)
 
