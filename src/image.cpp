@@ -1,9 +1,11 @@
 #include <glad/glad.h>
 #include <stdio.h>
-#include <glm/gtc/matrix_transform.hpp>
-#include <glm/gtx/string_cast.hpp>
-#include <glm/gtc/type_ptr.hpp>
-#include <glm/glm.hpp>
+
+#define GLM_ENABLE_EXPERIMENTAL
+#include "glm/gtc/matrix_transform.hpp"
+#include "glm/gtx/string_cast.hpp"
+#include "glm/gtc/type_ptr.hpp"
+#include "glm/glm.hpp"
 #include <iostream>
 #include <fstream>
 #include <sstream>
@@ -12,15 +14,14 @@
 
 CardAtlas::CardAtlas(
     std::string path,
-    unsigned int row_cnt, unsigned int column_cnt,
-    unsigned int row_padding, unsigned int column_padding,
-    glm::vec2 start, float scale
-) : m_Scale(scale), m_RowCnt(row_cnt), m_ColumnCnt(column_cnt), m_RowPadding(row_padding), m_ColumnPadding(column_padding) {
+    glm::vec2 start,
+    glm::vec2 size,
+    glm::vec2 stride,
+    float scale
+) : scale(scale), m_Start(start), m_Size(size), m_Stride(stride) {
     int nrComponents;
     unsigned char *data = reinterpret_cast<unsigned char*>(
     stbi_load(path.c_str(), &m_Width, &m_Height, &nrComponents, 0));
-
-    m_Start = start / glm::vec2(m_Width, m_Height);
 
     if (!data) {
       stbi_image_free(data);
@@ -93,9 +94,6 @@ void CardAtlas::Render(
     unsigned int card_row, unsigned int card_column,
     glm::vec2 scr_size, glm::vec2 pos
 ) {
-    assert(card_row >= 0 && card_row < m_RowCnt && "Row id is out of bounds");
-    assert(card_column >= 0 && card_column < m_ColumnCnt && "Column id is out of bounds");
-
     glDisable(GL_DEPTH_TEST);
     glEnable(GL_BLEND);
     glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
@@ -119,19 +117,16 @@ void CardAtlas::Render(
 
     float xpos = pos.x;
     float ypos = pos.y;
-    float w = m_Width * m_Scale / m_ColumnCnt;
-    float h = m_Height * m_Scale / m_RowCnt;
-    unsigned row_height = m_RowPadding + (m_Height - (m_RowCnt + 1) * m_RowPadding) / m_RowCnt;
-    unsigned column_width = m_ColumnPadding + (m_Width - (m_ColumnCnt + 1) * m_ColumnPadding) / m_ColumnCnt;
+    float w = m_Size.x * scale;
+    float h = m_Size.y * scale;
     glm::vec2 uv_start = glm::vec2(
-        column_width * card_column / (float)m_Width,
-        row_height * card_row / (float)m_Height
+        m_Stride.x * card_column,
+        m_Stride.y * card_row
     ) + m_Start;
 
-    glm::vec2 uv_end = glm::vec2(
-        (column_width * (card_column + 1) - m_ColumnPadding - 1) / (float)m_Width,
-        (row_height * (card_row + 1) - m_RowPadding - 1) / (float)m_Height
-    ) + m_Start;
+    glm::vec2 uv_end = uv_start + m_Size;
+    uv_start /= glm::vec2(m_Width, m_Height);
+    uv_end /= glm::vec2(m_Width, m_Height);
 
     float vertices[6][4] = {
     { xpos,     ypos + h,   uv_start.x, uv_start.y },

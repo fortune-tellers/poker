@@ -1,21 +1,48 @@
-/* #define GL_SILENCE_DEPRECATION */
 #include <glad/glad.h>
 #include <GLFW/glfw3.h>
 #include "imgui.h"
 #include "imgui_impl_glfw.h"
 #include "imgui_impl_opengl3.h"
 #include <iostream>
+#include <optional>
 #include <stdio.h>
 
 #include "image.h"
+#include "card.h"
 
-static void glfw_error_callback(int error, const char* description)
-{
+static const char *suit_names[] = { "Clubs", "Spades", "Hearts", "Diamonds" };
+static constexpr float card_size_screen_portion = 0.05;
+static std::optional<Card> player_cards[2] {};
+static std::optional<size_t> current_card_id{};
+static glm::vec2 card_pos[2];
+
+void mouse_button_callback(GLFWwindow* window, int button, int action, int mods) {
+    if (ImGui::GetIO().WantCaptureMouse)
+        return;
+    if (button != GLFW_MOUSE_BUTTON_LEFT || action != GLFW_PRESS)
+        return;
+
+    double x, y;
+    glfwGetCursorPos(window, &x, &y);
+    int display_w, display_h;
+    glfwGetFramebufferSize(window, &display_w, &display_h);
+    current_card_id = {};
+    glm::vec2 pos { x / display_w, 1.0 - (y / display_h) };
+    for (size_t i = 0; i < 2; i++) {
+        if (pos.x < card_pos[i].x || pos.x > card_pos[i].x + card_size_screen_portion)
+            continue;
+        if (pos.y < card_pos[i].y || pos.y > card_pos[i].y + card_size_screen_portion)
+            continue;
+        current_card_id = i;
+        break;
+    }
+}
+
+static void glfw_error_callback(int error, const char* description) {
     fprintf(stderr, "GLFW Error %d: %s\n", error, description);
 }
 
-int main(int, char**)
-{
+int main(int, char**) {
     glfwSetErrorCallback(glfw_error_callback);
     if (!glfwInit())
         return 1;
@@ -25,15 +52,13 @@ int main(int, char**)
     glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 3);
     glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 0);
 
-    // Create window with graphics context
     GLFWwindow* window = glfwCreateWindow(1280, 720, "Dear ImGui GLFW+OpenGL3 example", nullptr, nullptr);
     if (window == nullptr)
         return 1;
+    glfwSetMouseButtonCallback(window, mouse_button_callback);
     glfwMakeContextCurrent(window);
     glfwSwapInterval(1); // Enable vsync
 
-    // glad: load all OpenGL function pointers
-    // ---------------------------------------
     if (!gladLoadGLLoader((GLADloadproc)glfwGetProcAddress)) {
         std::cout << "Failed to initialize GLAD" << std::endl;
         return -1;
@@ -42,34 +67,31 @@ int main(int, char**)
     IMGUI_CHECKVERSION();
     ImGui::CreateContext();
     ImGuiIO& io = ImGui::GetIO(); (void)io;
-    io.ConfigFlags |= ImGuiConfigFlags_NavEnableKeyboard;     // Enable Keyboard Controls
-    io.ConfigFlags |= ImGuiConfigFlags_NavEnableGamepad;      // Enable Gamepad Controls
-
-    // Setup Dear ImGui style
+    io.ConfigFlags |= ImGuiConfigFlags_NavEnableKeyboard;
+    io.ConfigFlags |= ImGuiConfigFlags_NavEnableGamepad;
     ImGui::StyleColorsDark();
 
-    // Setup Platform/Renderer backends
     ImGui_ImplGlfw_InitForOpenGL(window, true);
     ImGui_ImplOpenGL3_Init(glsl_version);
 
-    // Our state
-    bool show_demo_window = true;
-    bool show_another_window = false;
     ImVec4 clear_color = ImVec4(0.45f, 0.55f, 0.60f, 1.00f);
 
+    glm::vec2 card_size(105.0f, 147.0f);
     CardAtlas atlas(
         "resources/cards.jpg",
-        4, 13,
-        6, 6,
-        1.0f, glm::vec2(7.0f, 7.0f)
+        glm::vec2(19.0f, 31.0f),
+        card_size,
+        glm::vec2(112.0f, 153.0f),
+        1.0f
     );
 
+    float left_padding = (1.0f - 2.0f * card_size_screen_portion - 0.01f) / 2.0f;
+    card_pos[0] = { left_padding, 0.01f };
+    card_pos[1] = { left_padding + card_size_screen_portion + 0.01f, 0.01f };
+
     // Main loop
-    while (!glfwWindowShouldClose(window))
-    {
-        glfwPollEvents();
-        if (glfwGetWindowAttrib(window, GLFW_ICONIFIED) != 0)
-        {
+    while (!glfwWindowShouldClose(window)) {
+        if (glfwGetWindowAttrib(window, GLFW_ICONIFIED) != 0) {
             ImGui_ImplGlfw_Sleep(10);
             continue;
         }
@@ -80,24 +102,36 @@ int main(int, char**)
         ImGui::NewFrame();
 
         // 2. Show a simple window that we create ourselves. We use a Begin/End pair to create a named window.
-        {
-            static float f = 0.0f;
-            static int counter = 0;
+        if (current_card_id.has_value()) {
+            auto &current_card = player_cards[*current_card_id];
+            ImGui::Text("Select card");
+            bool known = current_card.has_value();
+            ImGui::Checkbox("Known", &known); 
+            if (!known) {
+                current_card = {};
+            } else if (!current_card.has_value()) {
+                current_card = { 2, Suit::Hearts };
+            }
 
-            ImGui::Begin("Hello, world!");                          // Create a window called "Hello, world!" and append into it.
+            if (current_card.has_value()) {
+                ImGui::SliderInt(
+                    "Card power",
+                    &current_card->power,
+                    2, 14,
+                    "%d",
+                    ImGuiSliderFlags_AlwaysClamp
+                );
 
-            ImGui::Text("This is some useful text.");               // Display some text (you can use a format strings too)
-
-            ImGui::SliderFloat("float", &f, 0.0f, 1.0f);            // Edit 1 float using a slider from 0.0f to 1.0f
-            ImGui::ColorEdit3("clear color", (float*)&clear_color); // Edit 3 floats representing a color
-
-            if (ImGui::Button("Button"))                            // Buttons return true when clicked (most widgets return true when edited/activated)
-                counter++;
-            ImGui::SameLine();
-            ImGui::Text("counter = %d", counter);
-
-            ImGui::Text("Application average %.3f ms/frame (%.1f FPS)", 1000.0f / io.Framerate, io.Framerate);
-            ImGui::End();
+                const int current_suit = (int)current_card->suit;
+                if (ImGui::BeginCombo("Card suit", suit_names[current_suit])) {
+                    for (size_t i = 0; i < 4; i++) {
+                        if (ImGui::Selectable(suit_names[i], i == current_suit)) {
+                            current_card->suit = (Suit)i;
+                        }
+                    }
+                    ImGui::EndCombo();
+                }
+            }
         }
 
         // Rendering
@@ -109,12 +143,27 @@ int main(int, char**)
         glClear(GL_COLOR_BUFFER_BIT);
         ImGui_ImplOpenGL3_RenderDrawData(ImGui::GetDrawData());
         glm::vec2 scr_size(display_w, display_h);
-        atlas.Render(0, 0, scr_size, scr_size / 2.0f);
-        atlas.Render(0, 1, scr_size, scr_size / 2.0f + glm::vec2(100.0f, 0.0f));
-        atlas.Render(1, 0, scr_size, scr_size / 2.0f + glm::vec2(0.0f, -150.0f));
-        atlas.Render(2, 0, scr_size, scr_size / 2.0f + glm::vec2(0.0f, -300.0f));
+        atlas.scale = (scr_size * card_size_screen_portion / card_size).x;
 
+        glm::vec2 actual_card_size = card_size * atlas.scale;
+        float left_padding = scr_size.x * (1.0f - 2.0f * card_size_screen_portion - 0.01f) / 2.0f;
+        for (size_t i = 0; i < 2; i++) {
+            const auto card = player_cards[i];
+            int row, column;
+            if (card.has_value()) {
+                column = card->power - 2;
+                row = (int)card->suit;
+            } else {
+                column = 13;
+                row = 2;
+            }
+            atlas.Render(
+                row, column, scr_size,
+                card_pos[i] * scr_size
+            );
+        }
         glfwSwapBuffers(window);
+        glfwPollEvents();
     }
 
     // Cleanup

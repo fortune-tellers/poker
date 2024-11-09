@@ -9,7 +9,7 @@ set(CMAKE_POLICY_DEFAULT_CMP0077 NEW)
 
 find_package(OpenGL REQUIRED)
 
-set(GLFW_BUILD_WAYLAND ON)
+set(GLFW_BUILD_WAYLAND OFF)
 add_subdirectory(thirdparty/glfw)
 add_subdirectory(thirdparty/glad)
 
