@@ -15,6 +15,7 @@ static constexpr float card_size_screen_portion = 0.05;
 static std::optional<Card> player_cards[2] {};
 static std::optional<size_t> current_card_id{};
 static glm::vec2 card_pos[2];
+static glm::vec2 current_card_size;
 
 void mouse_button_callback(GLFWwindow* window, int button, int action, int mods) {
     if (ImGui::GetIO().WantCaptureMouse)
@@ -28,10 +29,12 @@ void mouse_button_callback(GLFWwindow* window, int button, int action, int mods)
     glfwGetFramebufferSize(window, &display_w, &display_h);
     current_card_id = {};
     glm::vec2 pos { x / display_w, 1.0 - (y / display_h) };
+    glm::vec2 rel_card_size = current_card_size / glm::vec2(display_w, display_h);
+    std::cout << std::endl;
     for (size_t i = 0; i < 2; i++) {
-        if (pos.x < card_pos[i].x || pos.x > card_pos[i].x + card_size_screen_portion)
+        if (pos.x < card_pos[i].x || pos.x > card_pos[i].x + rel_card_size.x)
             continue;
-        if (pos.y < card_pos[i].y || pos.y > card_pos[i].y + card_size_screen_portion)
+        if (pos.y < card_pos[i].y || pos.y > card_pos[i].y + rel_card_size.y)
             continue;
         current_card_id = i;
         break;
@@ -145,7 +148,7 @@ int main(int, char**) {
         glm::vec2 scr_size(display_w, display_h);
         atlas.scale = (scr_size * card_size_screen_portion / card_size).x;
 
-        glm::vec2 actual_card_size = card_size * atlas.scale;
+        current_card_size = card_size * atlas.scale;
         float left_padding = scr_size.x * (1.0f - 2.0f * card_size_screen_portion - 0.01f) / 2.0f;
         for (size_t i = 0; i < 2; i++) {
             const auto card = player_cards[i];
