@@ -1,4 +1,5 @@
 #include "Controller.hpp"
+#include "poker.hpp"
 
 void Controller::evaluateRound(std::vector<Player>& players, const std::vector<int>& handStrengths) {
     int numPlayers = players.size();
@@ -31,17 +32,19 @@ void Controller::Evaluate(Board &board, std::vector<Player> &players) {
 
             break;
         case BoardStage::FLOP:
-            for(int i = 0; i< players.size(); i++){
-                for(int j=0; j<4; j++){
-                    cards_in_game.insert(players[i].cards[j].getOrder());
-                }
+            for(int i = 0; i < static_cast<int>(BoardStage::FLOP); i++){
+                cards_in_game.insert(board.cards[i].getOrder());
             }
-            for(int card_one=0; card_one<52; card_one++){
+            for(int i = 0; i < players.size(); i++){
+                cards_in_game.insert(players[i].cards[0].getOrder());
+                cards_in_game.insert(players[i].cards[1].getOrder());
+            }
+            for(int card_one = 0; card_one < 52; card_one++){
                 if(cards_in_game.count(card_one)) continue;
-                for(int card_two = 0; card_two<52; card_two++){
-                    if(cards_in_game.count(card_one) || card_one == card_two) continue;
-                    for(int i = 0; i< players.size(); i++){
-                        int ans = evaluate_7cards(players[i].cards[0].getOrder(), 
+                for(int card_two = 0; card_two < 52; card_two++){
+                    if(cards_in_game.count(card_two) || card_one == card_two) continue;
+                    for(int i = 0; i < players.size(); i++){
+                        int ans = evaluate_7cards(  players[i].cards[0].getOrder(), 
                                                     players[i].cards[1].getOrder(), 
                                                     board.cards[0].getOrder(), 
                                                     board.cards[1].getOrder(), 
@@ -55,15 +58,17 @@ void Controller::Evaluate(Board &board, std::vector<Player> &players) {
             }
             break;
         case BoardStage::TURN:
-            for(int i = 0; i< players.size(); i++){
-                for(int j=0; j<4; j++){
-                    cards_in_game.insert(players[i].cards[j].getOrder());
-                }
+            for(int i = 0; i < static_cast<int>(BoardStage::TURN); i++){
+                cards_in_game.insert(board.cards[i].getOrder());
             }
-            for(int card=0; card<52; card++){
+            for(int i = 0; i < players.size(); i++){
+                cards_in_game.insert(players[i].cards[0].getOrder());
+                cards_in_game.insert(players[i].cards[1].getOrder());
+            }
+            for(int card = 0; card < 52; card++){
                 if(cards_in_game.count(card)) continue;
-                for(int i = 0; i< players.size(); i++){
-                    int ans = evaluate_7cards(players[i].cards[0].getOrder(), 
+                for(int i = 0; i < players.size(); i++){
+                    int ans = evaluate_7cards(  players[i].cards[0].getOrder(), 
                                                 players[i].cards[1].getOrder(), 
                                                 board.cards[0].getOrder(), 
                                                 board.cards[1].getOrder(), 
@@ -76,7 +81,7 @@ void Controller::Evaluate(Board &board, std::vector<Player> &players) {
             }
             break;
         default:
-            for(int i = 0; i< players.size(); i++){
+            for(int i = 0; i < players.size(); i++){
                 int ans = evaluate_7cards(players[i].cards[0].getOrder(), 
                                              players[i].cards[1].getOrder(), 
                                              board.cards[0].getOrder(), 
