@@ -29,6 +29,7 @@ add_executable(poker
     src/main.cpp
     src/image.cpp
     src/stb_image.cpp
+    src/card.cpp
 )
 
 target_include_directories(poker PUBLIC thirdparty PUBLIC thirdparty/imgui/backends PUBLIC include)

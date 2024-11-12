@@ -1,10 +1,10 @@
 #pragma once
 
 enum class Suit {
-    Hearts,
-    Diamonds,
     Clubs,
     Spades,
+    Hearts,
+    Diamonds,
 };
 
 struct Card {
@@ -12,4 +12,4 @@ struct Card {
     Suit suit; 
 };
 
-extern const char * CARD_NAMES[];
+extern const char *suit_names[];

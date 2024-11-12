@@ -7,10 +7,11 @@ class CardAtlas {
     unsigned int m_ShaderProgram;
     unsigned int m_VAO, m_VBO;
     unsigned int m_TextureID;
-    glm::vec2 m_Start, m_Size, m_Stride;
+    glm::vec2 m_Start, m_Stride;
     int m_Width, m_Height;
 
  public:
+    glm::vec2 m_Size;
     float scale;
     CardAtlas() = default;
     CardAtlas(
