@@ -1,30 +1,64 @@
 #include "Controller.hpp"
 #include "poker.hpp"
 
+#include <algorithm>
+
 void Controller::evaluateRound(std::vector<Player>& players, const std::vector<int>& handStrengths) {
     int numPlayers = players.size();
     int minStrength = *std::min_element(handStrengths.begin(), handStrengths.end());
     int winnerCount = std::count(handStrengths.begin(), handStrengths.end(), minStrength);
     
     for (int i = 0; i < numPlayers; i++) {
+        players[i].playerStats.total++;
+
         if (handStrengths[i] == minStrength) {
-            players[i].playerStats.wins++;
+            if (winnerCount > 1) {
+                players[i].playerStats.ties++;
+            } else {
+                players[i].playerStats.wins++;
+            }        
         } else {
             players[i].playerStats.losses++;
         }
     }
-    
-    if (winnerCount > 1) {
-        for (int i = 0; i < numPlayers; i++) {
-            if (handStrengths[i] == minStrength) {
-                players[i].playerStats.ties++;
-            }
+}
+
+bool getCardsInGame(Board &board, std::vector<Player> &players, uint64_t &cards_in_game) {
+    cards_in_game = 0;
+    for(int i = 0; i < static_cast<int>(board.stage); i++){
+        if (cards_in_game & (1ll << board.cards[i].getOrder())) {
+            std::cout << "ERROR, board card collision" << std::endl;
+            return false;
         }
+
+        cards_in_game |= (1ll << board.cards[i].getOrder());
     }
+    for(int i = 0; i < players.size(); i++){
+        if (cards_in_game & (1ll << players[i].cards[0].getOrder())) {
+            std::cout << "ERROR, player card collision" << std::endl;
+            return false;
+        }
+        if (cards_in_game & (1ll << players[i].cards[1].getOrder())) {
+            std::cout << "ERROR, player card collision" << std::endl;
+            return false;
+        }
+
+        cards_in_game |= players[i].cards[0].getOrder();
+        cards_in_game |= players[i].cards[1].getOrder();
+    }
+    return true;
 }
 
 void Controller::Evaluate(Board &board, std::vector<Player> &players) {
-    std::unordered_set<int> cards_in_game;
+    for(auto player: players) {
+        player.playerStats = {0, 0, 0, 0};
+    }
+
+    uint64_t cards_in_game;
+    if (!getCardsInGame(board, players, cards_in_game)) {
+        return;
+    }
+
     std::vector<int> handStrengths(players.size(), 0);
     switch(board.stage) {
         case BoardStage::PREFLOP:
@@ -32,17 +66,11 @@ void Controller::Evaluate(Board &board, std::vector<Player> &players) {
 
             break;
         case BoardStage::FLOP:
-            for(int i = 0; i < static_cast<int>(BoardStage::FLOP); i++){
-                cards_in_game.insert(board.cards[i].getOrder());
-            }
-            for(int i = 0; i < players.size(); i++){
-                cards_in_game.insert(players[i].cards[0].getOrder());
-                cards_in_game.insert(players[i].cards[1].getOrder());
-            }
             for(int card_one = 0; card_one < 52; card_one++){
-                if(cards_in_game.count(card_one)) continue;
+                if(cards_in_game & (1ll << card_one)) continue;
                 for(int card_two = 0; card_two < 52; card_two++){
-                    if(cards_in_game.count(card_two) || card_one == card_two) continue;
+                    if (card_one == card_two) continue;
+                    if (cards_in_game & (1ll << card_two)) continue;
                     for(int i = 0; i < players.size(); i++){
                         int ans = evaluate_7cards(  players[i].cards[0].getOrder(), 
                                                     players[i].cards[1].getOrder(), 
@@ -58,15 +86,8 @@ void Controller::Evaluate(Board &board, std::vector<Player> &players) {
             }
             break;
         case BoardStage::TURN:
-            for(int i = 0; i < static_cast<int>(BoardStage::TURN); i++){
-                cards_in_game.insert(board.cards[i].getOrder());
-            }
-            for(int i = 0; i < players.size(); i++){
-                cards_in_game.insert(players[i].cards[0].getOrder());
-                cards_in_game.insert(players[i].cards[1].getOrder());
-            }
             for(int card = 0; card < 52; card++){
-                if(cards_in_game.count(card)) continue;
+                if(cards_in_game & (1ll << card)) continue;
                 for(int i = 0; i < players.size(); i++){
                     int ans = evaluate_7cards(  players[i].cards[0].getOrder(), 
                                                 players[i].cards[1].getOrder(), 
