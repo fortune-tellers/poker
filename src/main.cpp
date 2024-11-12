@@ -10,7 +10,7 @@
 #include "image.h"
 #include "card.h"
 
-static constexpr float card_size_screen_portion = 0.05;
+static constexpr float card_size_screen_portion = 0.08;
 static std::optional<size_t> current_card_id{};
 static glm::vec2 current_card_size;
 
@@ -132,7 +132,7 @@ int main(int, char**) {
 
     for (size_t i = 0; i < 5; i++) {
         float x = left_padding + i * (padding_between_cards + card_size_screen_portion);
-        cards[2 * player_count + i].pos = {x, 0.5f + card_size_screen_portion};
+        cards[2 * player_count + i].pos = {x, 0.5f - card_size_screen_portion};
         cards[2 * player_count + i].player = -1;
     }
 
