@@ -36,13 +36,13 @@ void test() {
     controller.Evaluate(board, players);
     for(int i=0; i<players.size(); i++){
         cout << "player " << i << "\n";
-        cout << "total " << players[i].playerStats.total << "\n";
-        cout << "win " << players[i].playerStats.wins << "\n";
-        cout << "lose " << players[i].playerStats.losses << "\n";
-        cout << "ties " << players[i].playerStats.ties << "\n";
-        players[i].playerStats.wins = 0;
-        players[i].playerStats.losses = 0;
-        players[i].playerStats.ties = 0;
+        cout << "total " << players[i].stats.total << "\n";
+        cout << "win " << players[i].stats.wins << "\n";
+        cout << "lose " << players[i].stats.losses << "\n";
+        cout << "ties " << players[i].stats.ties << "\n";
+        players[i].stats.wins = 0;
+        players[i].stats.losses = 0;
+        players[i].stats.ties = 0;
     }
     // controller.Evaluate(board, players);
     // turn round
@@ -52,12 +52,12 @@ void test() {
     controller.Evaluate(board, players);
     for(int i=0; i<players.size(); i++){
         cout << "player " << i << "\n";
-        cout << "win " << players[i].playerStats.wins << "\n";
-        cout << "lose " << players[i].playerStats.losses << "\n";
-        cout << "ties " << players[i].playerStats.ties << "\n";
-        players[i].playerStats.wins = 0;
-        players[i].playerStats.losses = 0;
-        players[i].playerStats.ties = 0;
+        cout << "win " << players[i].stats.wins << "\n";
+        cout << "lose " << players[i].stats.losses << "\n";
+        cout << "ties " << players[i].stats.ties << "\n";
+        players[i].stats.wins = 0;
+        players[i].stats.losses = 0;
+        players[i].stats.ties = 0;
     }
     // river round
     board.stage = BoardStage::RIVER;
@@ -65,12 +65,12 @@ void test() {
     controller.Evaluate(board, players);
     for(int i=0; i<players.size(); i++){
         cout << "player " << i << "\n";
-        cout << "win " << players[i].playerStats.wins << "\n";
-        cout << "lose " << players[i].playerStats.losses << "\n";
-        cout << "ties " << players[i].playerStats.ties << "\n";
-        players[i].playerStats.wins = 0;
-        players[i].playerStats.losses = 0;
-        players[i].playerStats.ties = 0;
+        cout << "win " << players[i].stats.wins << "\n";
+        cout << "lose " << players[i].stats.losses << "\n";
+        cout << "ties " << players[i].stats.ties << "\n";
+        players[i].stats.wins = 0;
+        players[i].stats.losses = 0;
+        players[i].stats.ties = 0;
     }
 
 }

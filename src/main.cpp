@@ -9,6 +9,7 @@
 
 #include "image.h"
 #include "poker.hpp"
+#include "Controller.hpp"
 
 static constexpr float card_size_screen_portion = 0.08;
 static constexpr float padding_between_players = 0.03f;
@@ -17,16 +18,73 @@ static std::optional<size_t> current_card_id{};
 static glm::vec2 current_card_size;
 
 static constexpr int player_count = 5;
-static Player players[player_count];
+static std::vector<Player> players;
 static Board board;
+static bool has_results = false;
+static const char *current_error = "";
 
-const auto calcCardPos = [](int player_id, int card_id) -> glm::vec2 {
+bool validateState() {
+    current_error = "";
+    bool board_known[5] {};
+    for (int i = 0; i < 5; i++) {
+        board_known[i] = board.cards[i].rank >= 0;
+    }
+    bool preflop = 
+        board_known[0] == false
+        && board_known[1] == false
+        && board_known[2] == false
+        && board_known[3] == false
+        && board_known[4] == false;
+
+    bool flop = 
+        board_known[0] == true
+        && board_known[1] == true
+        && board_known[2] == true
+        && board_known[3] == false
+        && board_known[4] == false;
+
+    bool turn = 
+        board_known[0] == true
+        && board_known[1] == true
+        && board_known[2] == true
+        && board_known[3] == true
+        && board_known[4] == false;
+
+    bool river = 
+        board_known[0] == true
+        && board_known[1] == true
+        && board_known[2] == true
+        && board_known[3] == true
+        && board_known[4] == true;
+    
+    if (preflop) {
+        board.stage = BoardStage::PREFLOP;
+    } else if (flop) {
+        board.stage = BoardStage::FLOP;
+    } else if (turn) {
+        board.stage = BoardStage::TURN;
+    } else if (river) {
+        board.stage = BoardStage::RIVER;
+    } else {
+        current_error = "Invalid board state";
+        return false;
+    }
+
+    for (size_t i = 0; i < player_count; i++) {
+        if (players[i].cards[0].rank < 0 || players[i].cards[1].rank < 0) {
+            current_error = "Not all cards for players are known";
+            return false;
+        }
+    }
+    return true;
+}
+
+glm::vec2 calcCardPos(int player_id, int card_id) {
     if (player_id == 0) {
         float left_padding = (1.0f - 2.0f * card_size_screen_portion - 0.01f) * 0.5f;
         return { left_padding + card_id * (card_size_screen_portion + 0.01f), 0.01f };
     } else if (player_id > 0) {
-
-        float opponent_y = 1.0f - card_size_screen_portion - 0.05f;
+        float opponent_y = 1.0f - 1.5f * card_size_screen_portion;
         float left_padding = 
             (1.0f 
              - (player_count - 2) * padding_between_players
@@ -61,6 +119,7 @@ void mouse_button_callback(GLFWwindow* window, int button, int action, int mods)
     glm::vec2 pos { x / display_w, 1.0 - (y / display_h) };
     glm::vec2 rel_card_size = current_card_size / glm::vec2(display_w, display_h);
     // For picking player cards
+    std::cout << "Picking" << std::endl;
     for (size_t i = 0; i < player_count; i++) {
         for (size_t j = 0; j < 2; j++) {
             glm::vec2 cardPos = calcCardPos(i, j);
@@ -70,7 +129,6 @@ void mouse_button_callback(GLFWwindow* window, int button, int action, int mods)
                 continue;
             current_card_id = 2 * i + j;
         }
-        break;
     }
     // For picking board cards
     for (size_t i = 0; i < 5; i++) {
@@ -138,6 +196,8 @@ int main(int, char**) {
         1.0f
     );
 
+    players.resize(player_count);
+
     // Main loop
     while (!glfwWindowShouldClose(window)) {
         if (glfwGetWindowAttrib(window, GLFW_ICONIFIED) != 0) {
@@ -200,9 +260,28 @@ int main(int, char**) {
             }
         }
         
-        /* { */
-        /*     ImGui::Begin("Controls"); */
-        /* } */
+        {
+            ImGui::Begin("Controls");
+            if (ImGui::Button("Calculate chances")) {
+                if (validateState()) {
+                    has_results = Controller::Evaluate(board, players);
+                }
+            }
+            if (strlen(current_error) > 0)
+                ImGui::Text("Error: %s", current_error);
+            if (has_results) {
+                for (size_t i = 0; i < player_count; i++) {
+                    const auto &stats = players[i].stats;
+                    ImGui::Text("Player %d results:", (int)i);
+                    double winChance = (double)stats.wins / (double)stats.total;
+                    double tieChance = (double)stats.ties / (double)stats.total;
+                    ImGui::Text("Win Chance: %lf", winChance);
+                    ImGui::Text("Tie Chance: %lf", tieChance);
+                    ImGui::NewLine();
+                }
+            }
+            ImGui::End();
+        }
 
         // Rendering
         ImGui::Render();

@@ -7,9 +7,9 @@
 
 class Controller {
 public:
-  void Evaluate(Board &board, std::vector<Player> &players);
+  static bool Evaluate(Board &board, std::vector<Player> &players);
 private:
-  void evaluateRound(std::vector<Player>& players, const std::vector<int>& handStrengths);
+  static void evaluateRound(std::vector<Player>& players, const std::vector<int>& handStrengths);
 };
 
 

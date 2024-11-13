@@ -9,23 +9,24 @@ void Controller::evaluateRound(std::vector<Player>& players, const std::vector<i
     int winnerCount = std::count(handStrengths.begin(), handStrengths.end(), minStrength);
     
     for (int i = 0; i < numPlayers; i++) {
-        players[i].playerStats.total++;
+        players[i].stats.total++;
 
         if (handStrengths[i] == minStrength) {
             if (winnerCount > 1) {
-                players[i].playerStats.ties++;
+                players[i].stats.ties++;
             } else {
-                players[i].playerStats.wins++;
+                players[i].stats.wins++;
             }        
         } else {
-            players[i].playerStats.losses++;
+            players[i].stats.losses++;
         }
     }
 }
 
 bool getCardsInGame(Board &board, std::vector<Player> &players, uint64_t &cards_in_game) {
-    cards_in_game = 0;
-    for(int i = 0; i < static_cast<int>(board.stage); i++){
+    std::cout << cards_in_game << std::endl;
+    for (int i = 0; i < static_cast<int>(board.stage); i++) {
+        std::cout << board.cards[i].getOrder() << std::endl;
         if (cards_in_game & (1ll << board.cards[i].getOrder())) {
             std::cout << "ERROR, board card collision" << std::endl;
             return false;
@@ -33,7 +34,10 @@ bool getCardsInGame(Board &board, std::vector<Player> &players, uint64_t &cards_
 
         cards_in_game |= (1ll << board.cards[i].getOrder());
     }
-    for(int i = 0; i < players.size(); i++){
+    for (int i = 0; i < players.size(); i++) {
+        std::cout << "Cards before player " << i << cards_in_game << std::endl;
+        std::cout << players[i].cards[0].getOrder() << std::endl;
+        std::cout << players[i].cards[1].getOrder() << std::endl;
         if (cards_in_game & (1ll << players[i].cards[0].getOrder())) {
             std::cout << "ERROR, player card collision" << std::endl;
             return false;
@@ -43,27 +47,27 @@ bool getCardsInGame(Board &board, std::vector<Player> &players, uint64_t &cards_
             return false;
         }
 
-        cards_in_game |= players[i].cards[0].getOrder();
-        cards_in_game |= players[i].cards[1].getOrder();
+        cards_in_game |= (1ll << players[i].cards[0].getOrder());
+        cards_in_game |= (1ll << players[i].cards[1].getOrder());
     }
     return true;
 }
 
-void Controller::Evaluate(Board &board, std::vector<Player> &players) {
-    for(auto player: players) {
-        player.playerStats = {0, 0, 0, 0};
+bool Controller::Evaluate(Board &board, std::vector<Player> &players) {
+    for (auto player: players) {
+        player.stats = {0, 0, 0, 0};
     }
 
-    uint64_t cards_in_game;
+    uint64_t cards_in_game = 0;
     if (!getCardsInGame(board, players, cards_in_game)) {
-        return;
+        return false;
     }
 
     std::vector<int> handStrengths(players.size(), 0);
-    switch(board.stage) {
+    switch (board.stage) {
         case BoardStage::PREFLOP:
-            // Eugene's task
-
+            // TODO(Eugene): Make preflop
+            return false;
             break;
         case BoardStage::FLOP:
             for(int card_one = 0; card_one < 52; card_one++){
@@ -116,4 +120,5 @@ void Controller::Evaluate(Board &board, std::vector<Player> &players) {
 
             break;
     }
+    return true;
 }

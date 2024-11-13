@@ -39,10 +39,10 @@ We have multiple formats of card indexing;
 */
 
 enum class Suit {
-    Clubs,
-    Spades,
-    Hearts,
-    Diamonds,
+    Clubs = 0,
+    Spades = 1,
+    Hearts = 2,
+    Diamonds = 3,
 };
 
 extern const char *suit_names[];
@@ -69,7 +69,7 @@ struct GameStats {
 struct Player {
     // TODO: verification of player state
     Card cards[2];
-    GameStats playerStats;
+    GameStats stats;
     Player(): cards{{-1, Suit::Clubs}, {-1, Suit::Clubs}} {}
     Player(Card card1, Card card2) : cards{card1, card2} {}
 };
