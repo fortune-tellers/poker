@@ -8,20 +8,44 @@
 #include <stdio.h>
 
 #include "image.h"
-#include "card.h"
+#include "poker.hpp"
 
 static constexpr float card_size_screen_portion = 0.08;
+static constexpr float padding_between_players = 0.03f;
+static constexpr float padding_between_cards = 0.01f;
 static std::optional<size_t> current_card_id{};
 static glm::vec2 current_card_size;
 
-struct CardRepresentation {
-    std::optional<Card> card{};
-    glm::vec2 pos;
-    int player = 0;
-};
-
 static constexpr int player_count = 5;
-static CardRepresentation cards[2 * player_count + 5]{};
+static Player players[player_count];
+static Board board;
+
+const auto calcCardPos = [](int player_id, int card_id) -> glm::vec2 {
+    if (player_id == 0) {
+        float left_padding = (1.0f - 2.0f * card_size_screen_portion - 0.01f) * 0.5f;
+        return { left_padding + card_id * (card_size_screen_portion + 0.01f), 0.01f };
+    } else if (player_id > 0) {
+
+        float opponent_y = 1.0f - card_size_screen_portion - 0.05f;
+        float left_padding = 
+            (1.0f 
+             - (player_count - 2) * padding_between_players
+             - 2 * (player_count - 1) * card_size_screen_portion
+             - (player_count - 1) * padding_between_cards
+            ) * 0.5f;
+        float x = left_padding + (player_id - 1) * (2.0f * card_size_screen_portion + padding_between_cards + padding_between_players);
+        return { x + card_id * (card_size_screen_portion + padding_between_cards), opponent_y };
+    } else {
+        float left_padding = 
+            (1.0f 
+             - 5 * card_size_screen_portion
+             - 4 * padding_between_cards
+            ) * 0.5f;
+
+        float x = left_padding + card_id * (padding_between_cards + card_size_screen_portion);
+        return {x, 0.5f - card_size_screen_portion};
+    }
+};
 
 void mouse_button_callback(GLFWwindow* window, int button, int action, int mods) {
     if (ImGui::GetIO().WantCaptureMouse)
@@ -36,13 +60,26 @@ void mouse_button_callback(GLFWwindow* window, int button, int action, int mods)
     current_card_id = {};
     glm::vec2 pos { x / display_w, 1.0 - (y / display_h) };
     glm::vec2 rel_card_size = current_card_size / glm::vec2(display_w, display_h);
-    std::cout << std::endl;
-    for (size_t i = 0; i < 2 * player_count + 5; i++) {
-        if (pos.x < cards[i].pos.x || pos.x > cards[i].pos.x + rel_card_size.x)
+    // For picking player cards
+    for (size_t i = 0; i < player_count; i++) {
+        for (size_t j = 0; j < 2; j++) {
+            glm::vec2 cardPos = calcCardPos(i, j);
+            if (pos.x < cardPos.x || pos.x > cardPos.x + rel_card_size.x)
+                continue;
+            if (pos.y < cardPos.y || pos.y > cardPos.y + rel_card_size.y)
+                continue;
+            current_card_id = 2 * i + j;
+        }
+        break;
+    }
+    // For picking board cards
+    for (size_t i = 0; i < 5; i++) {
+        glm::vec2 cardPos = calcCardPos(-1, i);
+        if (pos.x < cardPos.x || pos.x > cardPos.x + rel_card_size.x)
             continue;
-        if (pos.y < cards[i].pos.y || pos.y > cards[i].pos.y + rel_card_size.y)
+        if (pos.y < cardPos.y || pos.y > cardPos.y + rel_card_size.y)
             continue;
-        current_card_id = i;
+        current_card_id = 2 * player_count + i;
         break;
     }
 }
@@ -101,41 +138,6 @@ int main(int, char**) {
         1.0f
     );
 
-    float left_padding = (1.0f - 2.0f * card_size_screen_portion - 0.01f) * 0.5f;
-    cards[0].pos = { left_padding, 0.01f };
-    cards[1].pos = { left_padding + card_size_screen_portion + 0.01f, 0.01f };
-    cards[0].player = 0;
-    cards[1].player = 0;
-
-    float opponent_y = 1.0f - card_size_screen_portion - 0.05f;
-    float padding_between_players = 0.03f;
-    float padding_between_cards = 0.01f;
-    left_padding = 
-        (1.0f 
-         - (player_count - 2) * padding_between_players
-         - 2 * (player_count - 1) * card_size_screen_portion
-         - (player_count - 1) * padding_between_cards
-        ) * 0.5f;
-    for (size_t i = 1; i < player_count; i++) {
-        float x = left_padding + (i - 1) * (2.0f * card_size_screen_portion + padding_between_cards + padding_between_players);
-        cards[2 * i + 0].pos = { x, opponent_y };
-        cards[2 * i + 1].pos = { x + card_size_screen_portion + padding_between_cards, opponent_y };
-        cards[2 * i + 0].player = i;
-        cards[2 * i + 1].player = i;
-    }
-
-    left_padding = 
-        (1.0f 
-         - 5 * card_size_screen_portion
-         - 4 * padding_between_cards
-        ) * 0.5f;
-
-    for (size_t i = 0; i < 5; i++) {
-        float x = left_padding + i * (padding_between_cards + card_size_screen_portion);
-        cards[2 * player_count + i].pos = {x, 0.5f - card_size_screen_portion};
-        cards[2 * player_count + i].player = -1;
-    }
-
     // Main loop
     while (!glfwWindowShouldClose(window)) {
         if (glfwGetWindowAttrib(window, GLFW_ICONIFIED) != 0) {
@@ -148,12 +150,17 @@ int main(int, char**) {
         ImGui::NewFrame();
 
         if (current_card_id.has_value()) {
-            auto &current_card = cards[*current_card_id].card;
-            if (cards[*current_card_id].player >= 0) {
+            Card *current_card = nullptr;
+            if (*current_card_id < 2 * player_count)
+                current_card = &players[*current_card_id / 2].cards[*current_card_id % 2];
+            else
+                current_card = &board.cards[*current_card_id - 2 * player_count];
+
+            if (*current_card_id >= 0) {
                 ImGui::Text(
                     "Select card %d for player %d", 
                     (int)(*current_card_id) % 2,
-                    cards[*current_card_id].player
+                    (int)(*current_card_id) / 2
                 );
             } else {
                 ImGui::Text(
@@ -161,22 +168,25 @@ int main(int, char**) {
                     (int)(*current_card_id) - 2 * player_count
                 );
             }
-            bool known = current_card.has_value();
+            bool known = current_card->rank >= 0;
+            bool prev_known = known;
             ImGui::Checkbox("Known", &known); 
             if (!known) {
-                current_card = {};
-            } else if (!current_card.has_value()) {
-                current_card = { 2, Suit::Clubs };
+                *current_card = {};
+            } else if (!prev_known) {
+                *current_card = { 0, Suit::Clubs };
             }
 
-            if (current_card.has_value()) {
+            if (current_card->rank >= 0) {
+                int rank = current_card->rank + 2;
                 ImGui::SliderInt(
                     "Card power",
-                    &current_card->power,
+                    &rank,
                     2, 14,
                     "%d",
                     ImGuiSliderFlags_AlwaysClamp
                 );
+                current_card->rank = rank - 2;
 
                 const int current_suit = (int)current_card->suit;
                 if (ImGui::BeginCombo("Card suit", suit_names[current_suit])) {
@@ -189,6 +199,10 @@ int main(int, char**) {
                 }
             }
         }
+        
+        /* { */
+        /*     ImGui::Begin("Controls"); */
+        /* } */
 
         // Rendering
         ImGui::Render();
@@ -203,20 +217,28 @@ int main(int, char**) {
 
         table.Render(0, 0, scr_size, glm::vec2(0, 0));
         current_card_size = card_size * atlas.scale;
-        for (size_t i = 0; i < 2 * player_count + 5; i++) {
-            const auto card = cards[i].card;
+
+        const auto renderCard = [&](Card card, glm::vec2 pos) {
             int row, column;
-            if (card.has_value()) {
-                column = card->power - 2;
-                row = (int)card->suit;
+            if (card.rank >= 0) {
+                column = card.rank;
+                row = (int)card.suit;
             } else {
                 column = 13;
                 row = 2;
             }
             atlas.Render(
                 row, column, scr_size,
-                cards[i].pos * scr_size
+                pos * scr_size
             );
+        };
+        for (size_t i = 0; i < player_count; i++) {
+            for (size_t j = 0; j < 2; j++) {
+                renderCard(players[i].cards[j], calcCardPos(i, j));
+            }
+        }
+        for (size_t i = 0; i < 5; i++) {
+            renderCard(board.cards[i], calcCardPos(-1, i));
         }
         ImGui_ImplOpenGL3_RenderDrawData(ImGui::GetDrawData());
         glfwSwapBuffers(window);
