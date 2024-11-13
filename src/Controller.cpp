@@ -38,13 +38,13 @@ bool getCardsInGame(Board &board, std::vector<Player> &players, uint64_t &cards_
             std::cout << "ERROR, player card collision" << std::endl;
             return false;
         }
+        cards_in_game |= (1ll << players[i].cards[0].getOrder());
+        
         if (cards_in_game & (1ll << players[i].cards[1].getOrder())) {
             std::cout << "ERROR, player card collision" << std::endl;
             return false;
         }
-
-        cards_in_game |= players[i].cards[0].getOrder();
-        cards_in_game |= players[i].cards[1].getOrder();
+        cards_in_game |= (1ll << players[i].cards[1].getOrder());
     }
     return true;
 }
