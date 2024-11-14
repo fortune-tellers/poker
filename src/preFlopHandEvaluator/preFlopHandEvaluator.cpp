@@ -9,9 +9,9 @@
 
 using namespace std;
 
-constexpr array<string, 13> RANKS = {"2", "3", "4", "5", "6", "7", "8", "9", "T", "J", "Q", "K", "A"};
-constexpr array<char, 4> SUITS = {'s', 'h', 'd', 'c'};
-constexpr array<int, 4> SUIT_MASKS = {0x1000, 0x2000, 0x4000, 0x8000};
+const array<string, 13> RANKS = {"2", "3", "4", "5", "6", "7", "8", "9", "T", "J", "Q", "K", "A"};
+const array<char, 4> SUITS = {'s', 'h', 'd', 'c'};
+const array<int, 4> SUIT_MASKS = {0x1000, 0x2000, 0x4000, 0x8000};
 
 
 const array<array<int, 6>, 6> pascalsTriangle = {{
@@ -368,7 +368,7 @@ tuple<vector<int>, vector<int>, int> fastHandHand(const vector<vector<int>>& han
     vector<int> ties(hands.size(), 0);
     int n = 0;
 
-    Deck deck = getBinedDeck(flattenHands(hands)); // предположим, что это создает нужную структуру колоды
+    Deck deck = getBinedDeck(flattenHands(hands));
     array<int, 5> indices = {0, 0, 0, 0, 0};
 
     while (true) {

@@ -39,6 +39,7 @@ static void glfw_error_callback(int error, const char* description)
 #define CONSOLE
 
 extern void test();
+extern void test_preflop();
 
 int main(int, char**)
 {
@@ -206,7 +207,7 @@ int main(int, char**)
     glfwTerminate();
 
 #else
-    test();
+    test_preflop();
 #endif
 
     return 0;

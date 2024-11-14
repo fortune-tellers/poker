@@ -19,16 +19,16 @@ typedef struct {
 
 int cardToInt(const string& card);
 
-//TODO
+
 int evaluateFlush(const vector<int>& hand, const vector<int>& board);
 
-//TODO
+
 int evaluateRainbow(const vector<int>& hand, const vector<int>& board);
 
-//TODO
+
 vector<int> findWinners(vector<int> results);
 
-//TODO
+
 vector<vector<int>> combinations(vector<int> elements, int k);
 
 #endif
