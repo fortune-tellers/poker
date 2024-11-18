@@ -64,6 +64,8 @@ int evaluate_5cards_iternal(int c1, int c2, int c3, int c4, int c5);
  * Brute force 21 variants and usage of common evaluate_5cards algorithm.
  */
 int evaluate_7cards_naive(int a, int b, int c, int d, int e, int f, int g);
+int evaluate_7cards_naive_coded(int a, int b, int c, int d, int e, int f, int g);
+
 
 /**
  * Special algorithm optimized for 7 card hand evaluation.

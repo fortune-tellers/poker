@@ -207,6 +207,7 @@ int main(int, char**)
     glfwTerminate();
 
 #else
+    test();
     test_preflop();
 #endif
 

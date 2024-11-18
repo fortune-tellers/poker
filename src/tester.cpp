@@ -45,22 +45,26 @@ void printWinPercentages(const vector<int>& wins, const vector<int>& ties, int n
     double winPercent2 = 100.0 * wins[1] / n;
     double tiePercent = 100.0 * ties[0] / n;
 
-    std::cout << "Рука 1 выигрывает в " << winPercent1 << "% случаев\n";
-    std::cout << "Рука 2 выигрывает в " << winPercent2 << "% случаев\n";
-    std::cout << "Ничья в " << tiePercent << "% случаев\n";
+    cout << "Рука 1 выигрывает в " << winPercent1 << "% случаев\n";
+    cout << "Рука 2 выигрывает в " << winPercent2 << "% случаев\n";
+    cout << "Ничья в " << tiePercent << "% случаев\n";
 }
 
 void test_preflop() {
-    vector<int> hand1 = createHand("7", 's', "2", 'h');  // Рука с двумя тузами
-    vector<int> hand2 = createHand("A", 'd', "A", 'c');  // Рука 7 и 2 разномастные
 
-    vector<vector<int>> hands = {hand1, hand2};
+
+    vector<int> hand1 = createHand("A", 'c', "8", 'd');  // Рука с двумя тузами
+    vector<int> hand2 = createHand("A", 's', "2", 'h');  // Рука 7 и 2 разномастные
+    vector<int> hand3 = createHand("K", 's', "Q", 's');
+
+    vector<vector<int>> hands = {hand1, hand2, hand3};
+
     cout << "hands created, going to fastHandHand" << endl;
 
     auto [wins, ties, n] = fastHandHand(hands);
 
-    cout << "wins aces " << wins[0] << "ties " << ties[0] << endl;
-    cout << "wins sevendeuce " << wins[1]  << "ties " << ties[1] << endl;
+    cout << "wins aces " << wins[0] << " ties " << ties[0] << endl;
+    cout << "wins sevendeuce " << wins[1]  << " ties " << ties[1] << endl;
     cout << n << endl;
     cout << endl;
 

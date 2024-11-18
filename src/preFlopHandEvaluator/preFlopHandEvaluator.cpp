@@ -10,8 +10,8 @@
 using namespace std;
 
 const array<string, 13> RANKS = {"2", "3", "4", "5", "6", "7", "8", "9", "T", "J", "Q", "K", "A"};
-const array<char, 4> SUITS = {'s', 'h', 'd', 'c'};
-const array<int, 4> SUIT_MASKS = {0x1000, 0x2000, 0x4000, 0x8000};
+const array<char, 4> SUITS = {'c', 'd', 'h', 's'};
+const array<int, 4> SUIT_MASKS = {0x8000, 0x4000, 0x2000, 0x1000};
 
 
 const array<array<int, 6>, 6> pascalsTriangle = {{
@@ -401,10 +401,15 @@ tuple<vector<int>, vector<int>, int> fastHandHand(const vector<vector<int>>& han
                 if (numVariations == 0) continue;
 
                 vector<int> flushScore;
-                for (const auto& hand : hands) {
+                for (int j = 0; j < hands.size(); j++) {
                     flushScore.push_back(
-                        evalHandFlushFast(hand, coloring.board, rainbowScore[&hand - &hands[0]],
-                                          coloring.color, coloring.num));
+                        evalHandFlushFast(
+                            hands[j],
+                            coloring.board,
+                            rainbowScore[j],
+                            coloring.color,
+                            coloring.num)
+                    );
                 }
 
                 auto winners = findWinners(flushScore);

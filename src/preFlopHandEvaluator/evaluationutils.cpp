@@ -16,7 +16,7 @@ const unordered_map<char, int> CHAR_RANK_TO_INT_RANK = {
 };
 
 const unordered_map<char, int> CHAR_SUIT_TO_INT_SUIT = {
-    {'s', 1}, {'h', 2}, {'d', 4}, {'c', 8}
+    {'c', 0}, {'d', 1}, {'h', 2}, {'s', 3}
 };
 
 int cardToInt(const string& card) {
@@ -25,12 +25,8 @@ int cardToInt(const string& card) {
 
     int rankInt = CHAR_RANK_TO_INT_RANK.at(rankChar);
     int suitInt = CHAR_SUIT_TO_INT_SUIT.at(suitChar);
-    int rankPrime = PRIMES[rankInt];
-    int bitRank = 1 << rankInt << 16;
-    int suit = suitInt << 12;
-    int rank = rankInt << 8;
 
-    return bitRank | suit | rank | rankPrime;
+    return PRIMES[rankInt] | (rankInt << 8) | (0x8000 >> suitInt) | (1 << (16 + rankInt));
 }
 
 vector<array<int, 5>> combinations75(const vector<int>& elements) {
@@ -75,31 +71,12 @@ int evaluateRainbow(const vector<int>& cards, const vector<int>& board) {
     vector<int> allCards = board;
     allCards.insert(allCards.end(), cards.begin(), cards.end());
 
-    int minimum = 7462;
-
-    if (allCards.size() == 7) {
-        const auto combs = combinations75(allCards);
-        for (const auto& comb : combs) {
-            int score = evaluate_5cards_iternal(comb[0], comb[1], comb[2], comb[3], comb[4]);
-            if (score < minimum) {
-                minimum = score;
-            }
-        }
-        return minimum;
-    } else if (allCards.size() == 6) {
-        auto combs = combinations65(allCards);
-        for (const auto& comb : combs) {
-            int score = evaluate_5cards_iternal(comb[0], comb[1], comb[2], comb[3], comb[4]);
-            if (score < minimum) {
-                minimum = score;
-            }
-        }
-        return minimum;
-    } else if (allCards.size() == 5) {
-        return evaluate_5cards_iternal(allCards[0], allCards[1], allCards[2], allCards[3], allCards[4]);;
+    for (int i = 0; i < 4; i++) {
+        int mask = (0x8000 >> i);
+        allCards[i] = (allCards[i] & 0xFFFF0FFF) | mask;
     }
 
-    return minimum;
+    return evaluate_7cards_naive_coded(allCards[0], allCards[1], allCards[2], allCards[3], allCards[4], allCards[5], allCards[6]);
 }
 
 
@@ -107,17 +84,10 @@ int evaluateFlush(const vector<int>& cards, const vector<int>& board) {
     vector<int> allCards = board;
     allCards.insert(allCards.end(), cards.begin(), cards.end());
 
-    int minimum = 7462;
+    int minimum = 9999;
 
     if (allCards.size() == 7) {
-        auto combs = combinations75(allCards);
-        for (const auto& comb : combs) {
-            int score = evaluate_5cards_iternal(comb[0], comb[1], comb[2], comb[3], comb[4]);
-            if (score < minimum) {
-                minimum = score;
-            }
-        }
-        return minimum;
+        return evaluate_7cards_naive_coded(allCards[0], allCards[1], allCards[2], allCards[3], allCards[4], allCards[5], allCards[6]);
     } else if (allCards.size() == 6) {
         auto combs = combinations65(allCards);
         for (const auto& comb : combs) {
@@ -174,6 +144,7 @@ vector<vector<int>> combinations(vector<int> elements, int k) {
 
 vector<int> findWinners(const vector<int> results) {
     int min = *min_element(results.begin(), results.end());
+
     vector<int> winners;
 
     for (size_t i = 0; i < results.size(); i++) {
