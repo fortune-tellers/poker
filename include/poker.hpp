@@ -28,8 +28,6 @@ static std::string value_str[] = {
     "One Pair",
     "High Card"
 };
-
-
 */
 
 /*
@@ -47,14 +45,27 @@ private:
     int rank;
 
 public:
+    Card(int r = 0, int s = 0) : rank(r), suit(s) {}
     int getOrder();
     int getKev();
 };
 
+// TODO: names for cards, for combinations.
+struct GameStats {
+    // TODO: Have to be atomics if using concurrency
+    uint64_t wins = 0;
+    uint64_t losses = 0;
+    uint64_t ties = 0;
+    uint64_t total = 0;
+};
+
 // Currently assuming that player have exactly 2 cards.
 class Player {
+public:
+    // TODO: verification of player state
     Card cards[2];
-    float winProbability = -100; // Can be negative if not defined;
+    GameStats playerStats;
+    Player(Card card1, Card card2) : cards{card1, card2} {}
 };
 
 enum class BoardStage { 
@@ -66,7 +77,8 @@ enum class BoardStage {
 
 class Board {
 public:
+    // TODO: verification of board state
     BoardStage stage;
     Card cards[5]; 
+    Board(BoardStage s) : stage(s), cards{} {}
 };
-

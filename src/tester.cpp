@@ -2,6 +2,8 @@
 #include <stdlib.h>
 #include <cassert>
 #include <vector>
+#include "Controller.hpp"
+#include "poker.hpp"
 
 #include "handEvaluators.hpp"
 #include "preFlopHandEvaluator/evaluationutils.h"
@@ -9,8 +11,76 @@
 using namespace std;
 
 void test() {   
+    Card card1(10, 2); // 2 пики
+    Card card2(10, 3); // 8 пики
+    Player player1(card1, card2);
 
+    Card card3(11, 0); // 10 крести
+    Card card4(11, 1); // 10 буби
+    Player player2(card3, card4);
+
+    // Создаем вектор игроков
+    std::vector<Player> players = { player1, player2 };
+    
+    // Создаем доску
+    Board board(BoardStage::RIVER);
+    // 0-12 0-3
+    // Создаем контроллер и вызываем метод Evaluate
+    Controller controller;
+    // flop round
+    board.cards[0] = Card(8, 0);
+    board.cards[1] = Card(8, 1);
+
+    // flop round
+
+    board.cards[2] = Card(8, 2);
+    board.stage = BoardStage::FLOP;
+    controller.Evaluate(board, players);
+    for(int i=0; i<players.size(); i++){
+        cout << "player " << i << "\n";
+        cout << "total " << players[i].playerStats.total << "\n";
+        cout << "win " << players[i].playerStats.wins << "\n";
+        cout << "lose " << players[i].playerStats.losses << "\n";
+        cout << "ties " << players[i].playerStats.ties << "\n";
+        players[i].playerStats.wins = 0;
+        players[i].playerStats.losses = 0;
+        players[i].playerStats.ties = 0;
+    }
+    // controller.Evaluate(board, players);
+    // turn round
+
+    board.cards[3] = Card(6, 1);
+    board.stage = BoardStage::TURN;
+    controller.Evaluate(board, players);
+    for(int i=0; i<players.size(); i++){
+        cout << "player " << i << "\n";
+        cout << "win " << players[i].playerStats.wins << "\n";
+        cout << "lose " << players[i].playerStats.losses << "\n";
+        cout << "ties " << players[i].playerStats.ties << "\n";
+        players[i].playerStats.wins = 0;
+        players[i].playerStats.losses = 0;
+        players[i].playerStats.ties = 0;
+    }
+    // river round
+    board.stage = BoardStage::RIVER;
+    board.cards[4] = Card(7, 3);
+    controller.Evaluate(board, players);
+    for(int i=0; i<players.size(); i++){
+        cout << "player " << i << "\n";
+        cout << "win " << players[i].playerStats.wins << "\n";
+        cout << "lose " << players[i].playerStats.losses << "\n";
+        cout << "ties " << players[i].playerStats.ties << "\n";
+        players[i].playerStats.wins = 0;
+        players[i].playerStats.losses = 0;
+        players[i].playerStats.ties = 0;
+    }
+
+}
+
+void evaluators_test() {
+    
     for(int a = 0; a < 52; a++) {
+        break;
         for(int b = a + 1; b < 52; b++) {
             for(int c = b + 1; c < 52; c++) {
                 for(int d = c + 1; d < 52; d++) {
