@@ -66,3 +66,6 @@ int evaluate_7cards_naive(int a, int b, int c, int d, int e, int f, int g);
  * HenryRLee PokerHandEvaluator
  */
 int evaluate_7cards(int a, int b, int c, int d, int e, int f, int g);
+
+
+void evaluate_preflop_naive(std::vector<Player> &players);

@@ -30,7 +30,8 @@ add_executable(poker src/main.cpp
     src/pokerlib.cpp
     src/Controller.cpp
     src/5cardHandEvaluator/5cardHandEvaluator.cpp
-    src/7cardHandEvaluator/7cardHandEvaluator.cpp)
+    src/7cardHandEvaluator/7cardHandEvaluator.cpp
+    src/naivePreflop/naive_preflop.cpp)
 
 target_include_directories(poker PUBLIC thirdparty PUBLIC thirdparty/imgui/backends PUBLIC include)
 
