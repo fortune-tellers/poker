@@ -25,6 +25,19 @@ void test() {
     // 0-12 0-3
     // Создаем контроллер и вызываем метод Evaluate
     Controller controller;
+    //preflop round
+    board.stage = BoardStage::PREFLOP;
+    controller.Evaluate(board, players);
+    for(int i=0; i<players.size(); i++){
+        cout << "player " << i << "\n";
+        cout << "total " << players[i].playerStats.total << "\n";
+        cout << "win " << players[i].playerStats.wins << "\n";
+        cout << "lose " << players[i].playerStats.losses << "\n";
+        cout << "ties " << players[i].playerStats.ties << "\n";
+        players[i].playerStats.wins = 0;
+        players[i].playerStats.losses = 0;
+        players[i].playerStats.ties = 0;
+    }
     // flop round
     board.cards[0] = Card(8, 0);
     board.cards[1] = Card(8, 1);

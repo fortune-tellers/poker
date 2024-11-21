@@ -63,7 +63,7 @@ void Controller::Evaluate(Board &board, std::vector<Player> &players) {
     switch(board.stage) {
         case BoardStage::PREFLOP:
             // Eugene's task
-
+            evaluate_preflop_naive(players);
             break;
         case BoardStage::FLOP:
             for(int card_one = 0; card_one < 52; card_one++){
