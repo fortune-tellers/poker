@@ -131,7 +131,7 @@ void test_preflop() {
 
     cout << "hands created, going to fastHandHand" << endl;
 
-    auto [wins, ties, n] = fastHandHand(hands);
+    auto [wins, ties, n] = preFlopEvaluator(hands);
 
     cout << "wins aces " << wins[0] << " ties " << ties[0] << endl;
     cout << "wins sevendeuce " << wins[1]  << " ties " << ties[1] << endl;

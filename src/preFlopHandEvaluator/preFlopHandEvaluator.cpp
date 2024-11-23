@@ -363,7 +363,7 @@ int evalHandFlushFast(const vector<int>& hand, const vector<int>& board, int rai
     return rainbowScore;
 }
 
-tuple<vector<int>, vector<int>, int> fastHandHand(const vector<vector<int>>& hands) {
+tuple<vector<int>, vector<int>, int> preFlopEvaluator(const vector<vector<int>>& hands) {
     vector<int> wins(hands.size(), 0);
     vector<int> ties(hands.size(), 0);
     int n = 0;

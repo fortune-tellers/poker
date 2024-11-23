@@ -76,7 +76,7 @@ int evaluateRainbow(const vector<int>& cards, const vector<int>& board) {
         allCards[i] = (allCards[i] & 0xFFFF0FFF) | mask;
     }
 
-    return evaluate_7cards_naive_coded(allCards[0], allCards[1], allCards[2], allCards[3], allCards[4], allCards[5], allCards[6]);
+    return evaluate_7cards_naive_kev(allCards[0], allCards[1], allCards[2], allCards[3], allCards[4], allCards[5], allCards[6]);
 }
 
 
@@ -87,7 +87,7 @@ int evaluateFlush(const vector<int>& cards, const vector<int>& board) {
     int minimum = 9999;
 
     if (allCards.size() == 7) {
-        return evaluate_7cards_naive_coded(allCards[0], allCards[1], allCards[2], allCards[3], allCards[4], allCards[5], allCards[6]);
+        return evaluate_7cards_naive_kev(allCards[0], allCards[1], allCards[2], allCards[3], allCards[4], allCards[5], allCards[6]);
     } else if (allCards.size() == 6) {
         auto combs = combinations65(allCards);
         for (const auto& comb : combs) {

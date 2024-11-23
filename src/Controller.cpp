@@ -61,10 +61,22 @@ void Controller::Evaluate(Board &board, std::vector<Player> &players) {
 
     std::vector<int> handStrengths(players.size(), 0);
     switch(board.stage) {
-        case BoardStage::PREFLOP:
-            // Eugene's task
+        case BoardStage::PREFLOP: {
+            vector<vector<int>> hands;
+            for (auto player : players) {
+                hands.push_back({player.cards[0].getKev(), player.cards[1].getKev()});
+            }
+            auto [wins, ties, n] = preFlopEvaluator(hands);
+
+            for (int i = 0; i < players.size(); i++) {
+                players[i].playerStats.wins = wins[i];
+                players[i].playerStats.ties = ties[i];
+                players[i].playerStats.losses = n - wins[i] - ties[i];
+                players[i].playerStats.total = n;
+            }
 
             break;
+        }
         case BoardStage::FLOP:
             for(int card_one = 0; card_one < 52; card_one++){
                 if(cards_in_game & (1ll << card_one)) continue;
