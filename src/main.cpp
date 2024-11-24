@@ -17,7 +17,7 @@ static constexpr float padding_between_cards = 0.01f;
 static std::optional<size_t> current_card_id{};
 static glm::vec2 current_card_size;
 
-static constexpr int player_count = 5;
+static constexpr int start_player_size = 3;
 static std::vector<Player> players;
 static Board board;
 static bool has_results = false;
@@ -70,7 +70,7 @@ bool validateState() {
         return false;
     }
 
-    for (size_t i = 0; i < player_count; i++) {
+    for (size_t i = 0; i < players.size(); i++) {
         if (players[i].cards[0].rank < 0 || players[i].cards[1].rank < 0) {
             current_error = "Not all cards for players are known";
             return false;
@@ -84,12 +84,12 @@ glm::vec2 calcCardPos(int player_id, int card_id) {
         float left_padding = (1.0f - 2.0f * card_size_screen_portion - 0.01f) * 0.5f;
         return { left_padding + card_id * (card_size_screen_portion + 0.01f), 0.01f };
     } else if (player_id > 0) {
-        float opponent_y = 1.0f - 1.5f * card_size_screen_portion;
+        float opponent_y = 1.0f - 3.0f * card_size_screen_portion;
         float left_padding = 
             (1.0f 
-             - (player_count - 2) * padding_between_players
-             - 2 * (player_count - 1) * card_size_screen_portion
-             - (player_count - 1) * padding_between_cards
+             - (players.size() - 2) * padding_between_players
+             - 2 * (players.size() - 1) * card_size_screen_portion
+             - (players.size() - 1) * padding_between_cards
             ) * 0.5f;
         float x = left_padding + (player_id - 1) * (2.0f * card_size_screen_portion + padding_between_cards + padding_between_players);
         return { x + card_id * (card_size_screen_portion + padding_between_cards), opponent_y };
@@ -120,7 +120,7 @@ void mouse_button_callback(GLFWwindow* window, int button, int action, int mods)
     glm::vec2 rel_card_size = current_card_size / glm::vec2(display_w, display_h);
     // For picking player cards
     std::cout << "Picking" << std::endl;
-    for (size_t i = 0; i < player_count; i++) {
+    for (size_t i = 0; i < players.size(); i++) {
         for (size_t j = 0; j < 2; j++) {
             glm::vec2 cardPos = calcCardPos(i, j);
             if (pos.x < cardPos.x || pos.x > cardPos.x + rel_card_size.x)
@@ -137,7 +137,7 @@ void mouse_button_callback(GLFWwindow* window, int button, int action, int mods)
             continue;
         if (pos.y < cardPos.y || pos.y > cardPos.y + rel_card_size.y)
             continue;
-        current_card_id = 2 * player_count + i;
+        current_card_id = 2 * players.size() + i;
         break;
     }
 }
@@ -196,7 +196,7 @@ int main(int, char**) {
         1.0f
     );
 
-    players.resize(player_count);
+    players.resize(start_player_size);
 
     // Main loop
     while (!glfwWindowShouldClose(window)) {
@@ -211,12 +211,12 @@ int main(int, char**) {
 
         if (current_card_id.has_value()) {
             Card *current_card = nullptr;
-            if (*current_card_id < 2 * player_count)
+            if (*current_card_id < 2 * players.size())
                 current_card = &players[*current_card_id / 2].cards[*current_card_id % 2];
             else
-                current_card = &board.cards[*current_card_id - 2 * player_count];
+                current_card = &board.cards[*current_card_id - 2 * players.size()];
 
-            if (*current_card_id >= 0) {
+            if (*current_card_id < 2 * players.size()) {
                 ImGui::Text(
                     "Select card %d for player %d", 
                     (int)(*current_card_id) % 2,
@@ -225,7 +225,7 @@ int main(int, char**) {
             } else {
                 ImGui::Text(
                     "Select card %d on the table",
-                    (int)(*current_card_id) - 2 * player_count
+                    (int)(*current_card_id) - 2 * (int)players.size()
                 );
             }
             bool known = current_card->rank >= 0;
@@ -262,6 +262,10 @@ int main(int, char**) {
         
         {
             ImGui::Begin("Controls");
+
+            int playerCount = players.size();
+            ImGui::SliderInt("Player count", &playerCount, 2, 6, "%d", ImGuiSliderFlags_AlwaysClamp);
+            players.resize(playerCount);
             if (ImGui::Button("Calculate chances")) {
                 if (validateState()) {
                     has_results = Controller::Evaluate(board, players);
@@ -270,7 +274,7 @@ int main(int, char**) {
             if (strlen(current_error) > 0)
                 ImGui::Text("Error: %s", current_error);
             if (has_results) {
-                for (size_t i = 0; i < player_count; i++) {
+                for (size_t i = 0; i < players.size(); i++) {
                     const auto &stats = players[i].stats;
                     ImGui::Text("Player %d results:", (int)i);
                     double winChance = (double)stats.wins / (double)stats.total;
@@ -311,7 +315,7 @@ int main(int, char**) {
                 pos * scr_size
             );
         };
-        for (size_t i = 0; i < player_count; i++) {
+        for (size_t i = 0; i < players.size(); i++) {
             for (size_t j = 0; j < 2; j++) {
                 renderCard(players[i].cards[j], calcCardPos(i, j));
             }
