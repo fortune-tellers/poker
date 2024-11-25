@@ -46,18 +46,22 @@ int evaluate_5cards(int a, int b, int c, int d, int e) {
  * Brute force 21 variants and usage of common evaluate_5cards algorithm.
  */
 int evaluate_7cards_naive(int a, int b, int c, int d, int e, int f, int g) {
-    int hand[7] = {getKevByOrder(a), getKevByOrder(b), 
+    return evaluate_7cards_naive_kev(getKevByOrder(a), getKevByOrder(b),
                    getKevByOrder(c), getKevByOrder(d), 
-                   getKevByOrder(e), getKevByOrder(f), getKevByOrder(g)};
+                   getKevByOrder(e), getKevByOrder(f), getKevByOrder(g));
+}
+
+int evaluate_7cards_naive_kev(int a, int b, int c, int d, int e, int f, int g) {
+    int hand[7] = {a, b, c, d, e, f, g};
 
     int best = 9999;
 
-    for (int i = 0; i < 21; i++) {   
+    for (int i = 0; i < 21; i++) {
         int q = evaluate_5cards_iternal(
-            hand[perm7[i][0]], 
-            hand[perm7[i][1]], 
-            hand[perm7[i][2]], 
-            hand[perm7[i][3]], 
+            hand[perm7[i][0]],
+            hand[perm7[i][1]],
+            hand[perm7[i][2]],
+            hand[perm7[i][3]],
             hand[perm7[i][4]]
         );
         if (q < best) {
