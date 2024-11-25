@@ -1,6 +1,10 @@
 #pragma once
 
 #include "poker.hpp"
+#include <vector>
+#include <tuple>
+
+using namespace std;
 /**
  * OrderNumbering:
  * |   | C | D | H | S |
@@ -56,13 +60,20 @@ int getOrderByKev(int kevNumber);
  */
 int evaluate_5cards(int a, int b, int c, int d, int e);
 
+int evaluate_5cards_iternal(int c1, int c2, int c3, int c4, int c5);
+
 /**
  * Brute force 21 variants and usage of common evaluate_5cards algorithm.
  */
 int evaluate_7cards_naive(int a, int b, int c, int d, int e, int f, int g);
+int evaluate_7cards_naive_kev(int a, int b, int c, int d, int e, int f, int g);
+
 
 /**
  * Special algorithm optimized for 7 card hand evaluation.
  * HenryRLee PokerHandEvaluator
  */
 int evaluate_7cards(int a, int b, int c, int d, int e, int f, int g);
+
+tuple<vector<int>, vector<int>, int> preFlopEvaluator(const vector<vector<int>>& hands);
+

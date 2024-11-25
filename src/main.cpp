@@ -146,7 +146,15 @@ static void glfw_error_callback(int error, const char* description) {
     fprintf(stderr, "GLFW Error %d: %s\n", error, description);
 }
 
+// Main code
+
+#define CONSOLE
+
+extern void test();
+extern void test_preflop();
+
 int main(int, char**) {
+#ifdef CONSOLE
     glfwSetErrorCallback(glfw_error_callback);
     if (!glfwInit())
         return 1;
@@ -336,5 +344,9 @@ int main(int, char**) {
     glfwDestroyWindow(window);
     glfwTerminate();
 
+#else
+    test();
+    test_preflop();
+#endif
     return 0;
 }

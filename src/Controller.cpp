@@ -42,13 +42,14 @@ bool getCardsInGame(Board &board, std::vector<Player> &players, uint64_t &cards_
             std::cout << "ERROR, player card collision" << std::endl;
             return false;
         }
+        cards_in_game |= (1ll << players[i].cards[0].getOrder());
+        
         if (cards_in_game & (1ll << players[i].cards[1].getOrder())) {
             std::cout << "ERROR, player card collision" << std::endl;
             return false;
         }
 
         cards_in_game |= (1ll << players[i].cards[0].getOrder());
-        cards_in_game |= (1ll << players[i].cards[1].getOrder());
     }
     return true;
 }
@@ -64,11 +65,23 @@ bool Controller::Evaluate(Board &board, std::vector<Player> &players) {
     }
 
     std::vector<int> handStrengths(players.size(), 0);
-    switch (board.stage) {
-        case BoardStage::PREFLOP:
-            // TODO(Eugene): Make preflop
-            return false;
+    switch(board.stage) {
+        case BoardStage::PREFLOP: {
+            vector<vector<int>> hands;
+            for (auto player : players) {
+                hands.push_back({player.cards[0].getKev(), player.cards[1].getKev()});
+            }
+            auto [wins, ties, n] = preFlopEvaluator(hands);
+
+            for (int i = 0; i < players.size(); i++) {
+                players[i].stats.wins = wins[i];
+                players[i].stats.ties = ties[i];
+                players[i].stats.losses = n - wins[i] - ties[i];
+                players[i].stats.total = n;
+            }
+
             break;
+        }
         case BoardStage::FLOP:
             for(int card_one = 0; card_one < 52; card_one++){
                 if(cards_in_game & (1ll << card_one)) continue;
