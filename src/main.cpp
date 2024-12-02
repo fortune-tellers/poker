@@ -20,7 +20,7 @@ static glm::vec2 current_card_size;
 static constexpr int start_player_size = 3;
 static std::vector<Player> players;
 static Board board;
-static bool has_results = false;
+static bool board_has_values = false;
 static const char *current_error = "";
 
 bool validateState() {
@@ -119,7 +119,6 @@ void mouse_button_callback(GLFWwindow* window, int button, int action, int mods)
     glm::vec2 pos { x / display_w, 1.0 - (y / display_h) };
     glm::vec2 rel_card_size = current_card_size / glm::vec2(display_w, display_h);
     // For picking player cards
-    std::cout << "Picking" << std::endl;
     for (size_t i = 0; i < players.size(); i++) {
         for (size_t j = 0; j < 2; j++) {
             glm::vec2 cardPos = calcCardPos(i, j);
@@ -274,14 +273,22 @@ int main(int, char**) {
             int playerCount = players.size();
             ImGui::SliderInt("Player count", &playerCount, 2, 6, "%d", ImGuiSliderFlags_AlwaysClamp);
             players.resize(playerCount);
+            std::optional<const char *> error;
             if (ImGui::Button("Calculate chances")) {
                 if (validateState()) {
-                    has_results = Controller::Evaluate(board, players);
+                    error = Controller::Evaluate(board, players);
+                    board_has_values = !error.has_value();
+                } else {
+                    board_has_values = false;
                 }
             }
-            if (strlen(current_error) > 0)
+            if (error.has_value())
+                current_error = *error;
+
+            if (strlen(current_error) > 0) {
                 ImGui::Text("Error: %s", current_error);
-            if (has_results) {
+            }
+            if (board_has_values) {
                 for (size_t i = 0; i < players.size(); i++) {
                     const auto &stats = players[i].stats;
                     ImGui::Text("Player %d results:", (int)i);

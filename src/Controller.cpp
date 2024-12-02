@@ -2,6 +2,8 @@
 #include "poker.hpp"
 
 #include <algorithm>
+#include <optional>
+#include <string>
 
 void Controller::evaluateRound(std::vector<Player>& players, const std::vector<int>& handStrengths) {
     int numPlayers = players.size();
@@ -35,33 +37,24 @@ bool getCardsInGame(Board &board, std::vector<Player> &players, uint64_t &cards_
         cards_in_game |= (1ll << board.cards[i].getOrder());
     }
     for (int i = 0; i < players.size(); i++) {
-        std::cout << "Cards before player " << i << cards_in_game << std::endl;
-        std::cout << players[i].cards[0].getOrder() << std::endl;
-        std::cout << players[i].cards[1].getOrder() << std::endl;
-        if (cards_in_game & (1ll << players[i].cards[0].getOrder())) {
-            std::cout << "ERROR, player card collision" << std::endl;
-            return false;
+        for (int j = 0; j < 2; j++) {
+            if (cards_in_game & (1ll << players[i].cards[j].getOrder())) {
+                return false;
+            }
+            cards_in_game |= (1ll << players[i].cards[j].getOrder());
         }
-        cards_in_game |= (1ll << players[i].cards[0].getOrder());
-        
-        if (cards_in_game & (1ll << players[i].cards[1].getOrder())) {
-            std::cout << "ERROR, player card collision" << std::endl;
-            return false;
-        }
-
-        cards_in_game |= (1ll << players[i].cards[0].getOrder());
     }
     return true;
 }
 
-bool Controller::Evaluate(Board &board, std::vector<Player> &players) {
+std::optional<const char *> Controller::Evaluate(Board &board, std::vector<Player> &players) {
     for (auto player: players) {
         player.stats = {0, 0, 0, 0};
     }
 
     uint64_t cards_in_game = 0;
     if (!getCardsInGame(board, players, cards_in_game)) {
-        return false;
+        return "Player card collision";
     }
 
     std::vector<int> handStrengths(players.size(), 0);
@@ -133,5 +126,5 @@ bool Controller::Evaluate(Board &board, std::vector<Player> &players) {
 
             break;
     }
-    return true;
+    return {};
 }
