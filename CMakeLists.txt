@@ -2,8 +2,8 @@ cmake_minimum_required(VERSION 3.16)
 
 project(Poker VERSION 0.1)
 
-set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_BUILD_TYPE Debug)
+set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
 set(CMAKE_POLICY_DEFAULT_CMP0077 NEW)
 
@@ -25,15 +25,19 @@ add_library(imgui
 )
 target_include_directories(imgui PUBLIC thirdparty/imgui thirdparty/glfw/include)
 
-add_executable(poker src/main.cpp 
+add_executable(poker
+    src/main.cpp
+    src/image.cpp
+    src/stb_image.cpp
     src/tester.cpp
     src/pokerlib.cpp
     src/Controller.cpp
     src/5cardHandEvaluator/5cardHandEvaluator.cpp
     src/7cardHandEvaluator/7cardHandEvaluator.cpp
-        src/preFlopHandEvaluator/preFlopHandEvaluator.cpp
-        src/preFlopHandEvaluator/evaluationutils.cpp
-        src/preFlopHandEvaluator/evaluationutils.h)
+    src/preFlopHandEvaluator/preFlopHandEvaluator.cpp
+    src/preFlopHandEvaluator/evaluationutils.cpp
+    src/preFlopHandEvaluator/evaluationutils.h
+)
 
 target_include_directories(poker PUBLIC thirdparty PUBLIC thirdparty/imgui/backends PUBLIC include)
 

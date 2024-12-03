@@ -1,4 +1,6 @@
-build/
-cmake-build-debug/
-.idea/
-.vscode/
+build
+cmake-build-debug
+imgui.ini
+.cache
+.idea
+.vscode

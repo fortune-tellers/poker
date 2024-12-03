@@ -11,12 +11,12 @@
 using namespace std;
 
 void test() {   
-    Card card1(10, 2); // 2 пики
-    Card card2(10, 3); // 8 пики
+    Card card1(10, Suit::Spades);
+    Card card2(10, Suit::Clubs);
     Player player1(card1, card2);
 
-    Card card3(11, 0); // 10 крести
-    Card card4(11, 1); // 10 буби
+    Card card3(11, Suit::Hearts); // 10 крести
+    Card card4(11, Suit::Diamonds); // 10 буби
     Player player2(card3, card4);
 
     // Создаем вектор игроков
@@ -28,51 +28,51 @@ void test() {
     // Создаем контроллер и вызываем метод Evaluate
     Controller controller;
     // flop round
-    board.cards[0] = Card(8, 0);
-    board.cards[1] = Card(8, 1);
+    board.cards[0] = Card(8, Suit::Hearts);
+    board.cards[1] = Card(8, Suit::Diamonds);
 
     // flop round
 
-    board.cards[2] = Card(8, 2);
+    board.cards[2] = Card(8, Suit::Clubs);
     board.stage = BoardStage::FLOP;
     controller.Evaluate(board, players);
     for(int i=0; i<players.size(); i++){
         cout << "player " << i << "\n";
-        cout << "total " << players[i].playerStats.total << "\n";
-        cout << "win " << players[i].playerStats.wins << "\n";
-        cout << "lose " << players[i].playerStats.losses << "\n";
-        cout << "ties " << players[i].playerStats.ties << "\n";
-        players[i].playerStats.wins = 0;
-        players[i].playerStats.losses = 0;
-        players[i].playerStats.ties = 0;
+        cout << "total " << players[i].stats.total << "\n";
+        cout << "win " << players[i].stats.wins << "\n";
+        cout << "lose " << players[i].stats.losses << "\n";
+        cout << "ties " << players[i].stats.ties << "\n";
+        players[i].stats.wins = 0;
+        players[i].stats.losses = 0;
+        players[i].stats.ties = 0;
     }
     // controller.Evaluate(board, players);
     // turn round
 
-    board.cards[3] = Card(6, 1);
+    board.cards[3] = Card(6, Suit::Diamonds);
     board.stage = BoardStage::TURN;
     controller.Evaluate(board, players);
     for(int i=0; i<players.size(); i++){
         cout << "player " << i << "\n";
-        cout << "win " << players[i].playerStats.wins << "\n";
-        cout << "lose " << players[i].playerStats.losses << "\n";
-        cout << "ties " << players[i].playerStats.ties << "\n";
-        players[i].playerStats.wins = 0;
-        players[i].playerStats.losses = 0;
-        players[i].playerStats.ties = 0;
+        cout << "win " << players[i].stats.wins << "\n";
+        cout << "lose " << players[i].stats.losses << "\n";
+        cout << "ties " << players[i].stats.ties << "\n";
+        players[i].stats.wins = 0;
+        players[i].stats.losses = 0;
+        players[i].stats.ties = 0;
     }
     // river round
     board.stage = BoardStage::RIVER;
-    board.cards[4] = Card(7, 3);
+    board.cards[4] = Card(7, Suit::Spades);
     controller.Evaluate(board, players);
     for(int i=0; i<players.size(); i++){
         cout << "player " << i << "\n";
-        cout << "win " << players[i].playerStats.wins << "\n";
-        cout << "lose " << players[i].playerStats.losses << "\n";
-        cout << "ties " << players[i].playerStats.ties << "\n";
-        players[i].playerStats.wins = 0;
-        players[i].playerStats.losses = 0;
-        players[i].playerStats.ties = 0;
+        cout << "win " << players[i].stats.wins << "\n";
+        cout << "lose " << players[i].stats.losses << "\n";
+        cout << "ties " << players[i].stats.ties << "\n";
+        players[i].stats.wins = 0;
+        players[i].stats.losses = 0;
+        players[i].stats.ties = 0;
     }
 
 }
