@@ -1,5 +1,6 @@
 #include "handEvaluators.hpp"
 
+const char *suit_names[] = { "Clubs", "Spades", "Hearts", "Diamonds" };
 
 int primes[] = { 2, 3, 5, 7, 11, 13, 17, 19, 23, 29, 31, 37, 41 };
 
@@ -30,10 +31,10 @@ int hand_rank(unsigned short val)
 }
 
 int Card::getOrder() {
-    return rank * 4 + suit;
+    return rank * 4 + (int)suit;
 }
 
 int Card::getKev() {
-    int csuit = (0x8000 >> suit);
-    return primes[rank] | (rank << 8) | suit | (1 << (16+rank));
+    int csuit = (0x8000 >> (int)suit);
+    return primes[rank] | (rank << 8) | (int)suit | (1 << (16+rank));
 }

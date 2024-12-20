@@ -1,4 +1,5 @@
 #pragma once
+#include <cstdint>
 
 #include <string>
 
@@ -38,14 +39,20 @@ We have multiple formats of card indexing;
 
 */
 
-class Card {
+enum class Suit {
+    Clubs = 0,
+    Spades = 1,
+    Hearts = 2,
+    Diamonds = 3,
+};
 
-private:
-    int suit;
+extern const char *suit_names[];
+
+struct Card {
     int rank;
+    Suit suit;
 
-public:
-    Card(int r = 0, int s = 0) : rank(r), suit(s) {}
+    Card(int r = -1, Suit s = Suit::Clubs) : rank(r), suit(s) {}
     int getOrder();
     int getKev();
 };
@@ -60,11 +67,11 @@ struct GameStats {
 };
 
 // Currently assuming that player have exactly 2 cards.
-class Player {
-public:
+struct Player {
     // TODO: verification of player state
     Card cards[2];
-    GameStats playerStats;
+    GameStats stats;
+    Player(): cards{{-1, Suit::Clubs}, {-1, Suit::Clubs}} {}
     Player(Card card1, Card card2) : cards{card1, card2} {}
 };
 
@@ -75,10 +82,10 @@ enum class BoardStage {
     RIVER = 5 
 };
 
-class Board {
-public:
+struct Board {
     // TODO: verification of board state
     BoardStage stage;
     Card cards[5]; 
-    Board(BoardStage s) : stage(s), cards{} {}
+    Board() : stage(BoardStage::PREFLOP), cards{} {}
+    explicit Board(BoardStage s) : stage(s), cards{} {}
 };

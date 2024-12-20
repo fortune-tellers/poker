@@ -1,15 +1,15 @@
-#include <vector>
 #include "poker.hpp"
 #include "handEvaluators.hpp"
+#include <vector>
 #include <iostream>
 #include <unordered_set>
-
+#include <optional>
 
 class Controller {
 public:
-  void Evaluate(Board &board, std::vector<Player> &players);
+  static std::optional<const char *> Evaluate(Board &board, std::vector<Player> &players);
 private:
-  void evaluateRound(std::vector<Player>& players, const std::vector<int>& handStrengths);
+  static void evaluateRound(std::vector<Player>& players, const std::vector<int>& handStrengths);
 };
 
 

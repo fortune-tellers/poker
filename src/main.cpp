@@ -1,36 +1,147 @@
-// Dear ImGui: standalone example application for GLFW + OpenGL 3, using programmable pipeline
-// (GLFW is a cross-platform general purpose library for handling windows, inputs, OpenGL/Vulkan/Metal graphics context creation, etc.)
-
-// Learn about Dear ImGui:
-// - FAQ                  https://dearimgui.com/faq
-// - Getting Started      https://dearimgui.com/getting-started
-// - Documentation        https://dearimgui.com/docs (same as your local docs/ folder).
-// - Introduction, links and more at the top of imgui.cpp
-
+#include <glad/glad.h>
+#include <GLFW/glfw3.h>
 #include "imgui.h"
 #include "imgui_impl_glfw.h"
 #include "imgui_impl_opengl3.h"
+#include <iostream>
+#include <optional>
 #include <stdio.h>
-#define GL_SILENCE_DEPRECATION
-#if defined(IMGUI_IMPL_OPENGL_ES2)
-#include <GLES2/gl2.h>
-#endif
-#include <GLFW/glfw3.h> // Will drag system OpenGL headers
 
-// [Win32] Our example includes a copy of glfw3.lib pre-compiled with VS2010 to maximize ease of testing and compatibility with old VS compilers.
-// To link with VS2010-era libraries, VS2015+ requires linking with legacy_stdio_definitions.lib, which we do using this pragma.
-// Your own project should not be affected, as you are likely to link with a newer binary of GLFW that is adequate for your version of Visual Studio.
-#if defined(_MSC_VER) && (_MSC_VER >= 1900) && !defined(IMGUI_DISABLE_WIN32_FUNCTIONS)
-#pragma comment(lib, "legacy_stdio_definitions")
-#endif
+#include "image.h"
+#include "poker.hpp"
+#include "Controller.hpp"
 
-// This example can also compile and run with Emscripten! See 'Makefile.emscripten' for details.
-#ifdef __EMSCRIPTEN__
-#include "../libs/emscripten/emscripten_mainloop_stub.h"
-#endif
+static constexpr float card_size_screen_portion = 0.08;
+static constexpr float padding_between_players = 0.03f;
+static constexpr float padding_between_cards = 0.01f;
+static std::optional<size_t> current_card_id{};
+static glm::vec2 current_card_size;
 
-static void glfw_error_callback(int error, const char* description)
-{
+static constexpr int start_player_size = 3;
+static std::vector<Player> players;
+static Board board;
+static bool board_has_values = false;
+static const char *current_error = "";
+
+bool validateState() {
+    current_error = "";
+    bool board_known[5] {};
+    for (int i = 0; i < 5; i++) {
+        board_known[i] = board.cards[i].rank >= 0;
+    }
+    bool preflop = 
+        board_known[0] == false
+        && board_known[1] == false
+        && board_known[2] == false
+        && board_known[3] == false
+        && board_known[4] == false;
+
+    bool flop = 
+        board_known[0] == true
+        && board_known[1] == true
+        && board_known[2] == true
+        && board_known[3] == false
+        && board_known[4] == false;
+
+    bool turn = 
+        board_known[0] == true
+        && board_known[1] == true
+        && board_known[2] == true
+        && board_known[3] == true
+        && board_known[4] == false;
+
+    bool river = 
+        board_known[0] == true
+        && board_known[1] == true
+        && board_known[2] == true
+        && board_known[3] == true
+        && board_known[4] == true;
+    
+    if (preflop) {
+        board.stage = BoardStage::PREFLOP;
+    } else if (flop) {
+        board.stage = BoardStage::FLOP;
+    } else if (turn) {
+        board.stage = BoardStage::TURN;
+    } else if (river) {
+        board.stage = BoardStage::RIVER;
+    } else {
+        current_error = "Invalid board state";
+        return false;
+    }
+
+    for (size_t i = 0; i < players.size(); i++) {
+        if (players[i].cards[0].rank < 0 || players[i].cards[1].rank < 0) {
+            current_error = "Not all cards for players are known";
+            return false;
+        }
+    }
+    return true;
+}
+
+glm::vec2 calcCardPos(int player_id, int card_id) {
+    if (player_id == 0) {
+        float left_padding = (1.0f - 2.0f * card_size_screen_portion - 0.01f) * 0.5f;
+        return { left_padding + card_id * (card_size_screen_portion + 0.01f), 0.01f };
+    } else if (player_id > 0) {
+        float opponent_y = 1.0f - 3.0f * card_size_screen_portion;
+        float left_padding = 
+            (1.0f 
+             - (players.size() - 2) * padding_between_players
+             - 2 * (players.size() - 1) * card_size_screen_portion
+             - (players.size() - 1) * padding_between_cards
+            ) * 0.5f;
+        float x = left_padding + (player_id - 1) * (2.0f * card_size_screen_portion + padding_between_cards + padding_between_players);
+        return { x + card_id * (card_size_screen_portion + padding_between_cards), opponent_y };
+    } else {
+        float left_padding = 
+            (1.0f 
+             - 5 * card_size_screen_portion
+             - 4 * padding_between_cards
+            ) * 0.5f;
+
+        float x = left_padding + card_id * (padding_between_cards + card_size_screen_portion);
+        return {x, 0.5f - card_size_screen_portion};
+    }
+};
+
+void mouse_button_callback(GLFWwindow* window, int button, int action, int mods) {
+    if (ImGui::GetIO().WantCaptureMouse)
+        return;
+    if (button != GLFW_MOUSE_BUTTON_LEFT || action != GLFW_PRESS)
+        return;
+
+    double x, y;
+    glfwGetCursorPos(window, &x, &y);
+    int display_w, display_h;
+    glfwGetFramebufferSize(window, &display_w, &display_h);
+    current_card_id = {};
+    glm::vec2 pos { x / display_w, 1.0 - (y / display_h) };
+    glm::vec2 rel_card_size = current_card_size / glm::vec2(display_w, display_h);
+    // For picking player cards
+    for (size_t i = 0; i < players.size(); i++) {
+        for (size_t j = 0; j < 2; j++) {
+            glm::vec2 cardPos = calcCardPos(i, j);
+            if (pos.x < cardPos.x || pos.x > cardPos.x + rel_card_size.x)
+                continue;
+            if (pos.y < cardPos.y || pos.y > cardPos.y + rel_card_size.y)
+                continue;
+            current_card_id = 2 * i + j;
+        }
+    }
+    // For picking board cards
+    for (size_t i = 0; i < 5; i++) {
+        glm::vec2 cardPos = calcCardPos(-1, i);
+        if (pos.x < cardPos.x || pos.x > cardPos.x + rel_card_size.x)
+            continue;
+        if (pos.y < cardPos.y || pos.y > cardPos.y + rel_card_size.y)
+            continue;
+        current_card_id = 2 * players.size() + i;
+        break;
+    }
+}
+
+static void glfw_error_callback(int error, const char* description) {
     fprintf(stderr, "GLFW Error %d: %s\n", error, description);
 }
 
@@ -41,145 +152,154 @@ static void glfw_error_callback(int error, const char* description)
 extern void test();
 extern void test_preflop();
 
-int main(int, char**)
-{
-
-#ifndef CONSOLE
+int main(int, char**) {
+#ifdef CONSOLE
     glfwSetErrorCallback(glfw_error_callback);
     if (!glfwInit())
         return 1;
 
-    // Decide GL+GLSL versions
-#if defined(IMGUI_IMPL_OPENGL_ES2)
-    // GL ES 2.0 + GLSL 100
-    const char* glsl_version = "#version 100";
-    glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 2);
-    glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 0);
-    glfwWindowHint(GLFW_CLIENT_API, GLFW_OPENGL_ES_API);
-#elif defined(__APPLE__)
-    // GL 3.2 + GLSL 150
-    const char* glsl_version = "#version 150";
-    glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 3);
-    glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 2);
-    glfwWindowHint(GLFW_OPENGL_PROFILE, GLFW_OPENGL_CORE_PROFILE);  // 3.2+ only
-    glfwWindowHint(GLFW_OPENGL_FORWARD_COMPAT, GL_TRUE);            // Required on Mac
-#else
     // GL 3.0 + GLSL 130
     const char* glsl_version = "#version 130";
     glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 3);
     glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 0);
-    //glfwWindowHint(GLFW_OPENGL_PROFILE, GLFW_OPENGL_CORE_PROFILE);  // 3.2+ only
-    //glfwWindowHint(GLFW_OPENGL_FORWARD_COMPAT, GL_TRUE);            // 3.0+ only
-#endif
 
-    // Create window with graphics context
     GLFWwindow* window = glfwCreateWindow(1280, 720, "Dear ImGui GLFW+OpenGL3 example", nullptr, nullptr);
     if (window == nullptr)
         return 1;
+    glfwSetMouseButtonCallback(window, mouse_button_callback);
     glfwMakeContextCurrent(window);
     glfwSwapInterval(1); // Enable vsync
 
+    if (!gladLoadGLLoader((GLADloadproc)glfwGetProcAddress)) {
+        std::cout << "Failed to initialize GLAD" << std::endl;
+        return -1;
+    }
     // Setup Dear ImGui context
     IMGUI_CHECKVERSION();
     ImGui::CreateContext();
     ImGuiIO& io = ImGui::GetIO(); (void)io;
-    io.ConfigFlags |= ImGuiConfigFlags_NavEnableKeyboard;     // Enable Keyboard Controls
-    io.ConfigFlags |= ImGuiConfigFlags_NavEnableGamepad;      // Enable Gamepad Controls
-
-    // Setup Dear ImGui style
+    io.ConfigFlags |= ImGuiConfigFlags_NavEnableKeyboard;
+    io.ConfigFlags |= ImGuiConfigFlags_NavEnableGamepad;
     ImGui::StyleColorsDark();
-    //ImGui::StyleColorsLight();
+    ImGui::GetStyle().ScaleAllSizes(2.0);
 
-    // Setup Platform/Renderer backends
     ImGui_ImplGlfw_InitForOpenGL(window, true);
-#ifdef __EMSCRIPTEN__
-    ImGui_ImplGlfw_InstallEmscriptenCallbacks(window, "#canvas");
-#endif
     ImGui_ImplOpenGL3_Init(glsl_version);
 
-    // Load Fonts
-    // - If no fonts are loaded, dear imgui will use the default font. You can also load multiple fonts and use ImGui::PushFont()/PopFont() to select them.
-    // - AddFontFromFileTTF() will return the ImFont* so you can store it if you need to select the font among multiple.
-    // - If the file cannot be loaded, the function will return a nullptr. Please handle those errors in your application (e.g. use an assertion, or display an error and quit).
-    // - The fonts will be rasterized at a given size (w/ oversampling) and stored into a texture when calling ImFontAtlas::Build()/GetTexDataAsXXXX(), which ImGui_ImplXXXX_NewFrame below will call.
-    // - Use '#define IMGUI_ENABLE_FREETYPE' in your imconfig file to use Freetype for higher quality font rendering.
-    // - Read 'docs/FONTS.md' for more instructions and details.
-    // - Remember that in C/C++ if you want to include a backslash \ in a string literal you need to write a double backslash \\ !
-    // - Our Emscripten build process allows embedding fonts to be accessible at runtime from the "fonts/" folder. See Makefile.emscripten for details.
-    //io.Fonts->AddFontDefault();
-    //io.Fonts->AddFontFromFileTTF("c:\\Windows\\Fonts\\segoeui.ttf", 18.0f);
-    //io.Fonts->AddFontFromFileTTF("../../misc/fonts/DroidSans.ttf", 16.0f);
-    //io.Fonts->AddFontFromFileTTF("../../misc/fonts/Roboto-Medium.ttf", 16.0f);
-    //io.Fonts->AddFontFromFileTTF("../../misc/fonts/Cousine-Regular.ttf", 15.0f);
-    //ImFont* font = io.Fonts->AddFontFromFileTTF("c:\\Windows\\Fonts\\ArialUni.ttf", 18.0f, nullptr, io.Fonts->GetGlyphRangesJapanese());
-    //IM_ASSERT(font != nullptr);
-
-    // Our state
-    bool show_demo_window = true;
-    bool show_another_window = false;
     ImVec4 clear_color = ImVec4(0.45f, 0.55f, 0.60f, 1.00f);
 
+    glm::vec2 card_size(105.0f, 147.0f);
+    CardAtlas atlas(
+        "resources/cards.jpg",
+        glm::vec2(19.0f, 31.0f),
+        card_size,
+        glm::vec2(112.0f, 153.0f),
+        1.0f
+    );
+    CardAtlas table(
+        "resources/table.jpg",
+        glm::vec2(0.0f, 0.0f),
+        glm::vec2(1920.0f, 720.0f),
+        glm::vec2(0.0f, 0.0f),
+        1.0f
+    );
+
+    players.resize(start_player_size);
+
     // Main loop
-#ifdef __EMSCRIPTEN__
-    // For an Emscripten build we are disabling file-system access, so let's not attempt to do a fopen() of the imgui.ini file.
-    // You may manually call LoadIniSettingsFromMemory() to load settings from your own storage.
-    io.IniFilename = nullptr;
-    EMSCRIPTEN_MAINLOOP_BEGIN
-#else
-    while (!glfwWindowShouldClose(window))
-#endif
-    {
-        // Poll and handle events (inputs, window resize, etc.)
-        // You can read the io.WantCaptureMouse, io.WantCaptureKeyboard flags to tell if dear imgui wants to use your inputs.
-        // - When io.WantCaptureMouse is true, do not dispatch mouse input data to your main application, or clear/overwrite your copy of the mouse data.
-        // - When io.WantCaptureKeyboard is true, do not dispatch keyboard input data to your main application, or clear/overwrite your copy of the keyboard data.
-        // Generally you may always pass all inputs to dear imgui, and hide them from your application based on those two flags.
-        glfwPollEvents();
-        if (glfwGetWindowAttrib(window, GLFW_ICONIFIED) != 0)
-        {
+    while (!glfwWindowShouldClose(window)) {
+        if (glfwGetWindowAttrib(window, GLFW_ICONIFIED) != 0) {
             ImGui_ImplGlfw_Sleep(10);
             continue;
         }
 
-        // Start the Dear ImGui frame
         ImGui_ImplOpenGL3_NewFrame();
         ImGui_ImplGlfw_NewFrame();
         ImGui::NewFrame();
 
-        // 1. Show the big demo window (Most of the sample code is in ImGui::ShowDemoWindow()! You can browse its code to learn more about Dear ImGui!).
-        if (show_demo_window)
-            ImGui::ShowDemoWindow(&show_demo_window);
+        if (current_card_id.has_value()) {
+            Card *current_card = nullptr;
+            if (*current_card_id < 2 * players.size())
+                current_card = &players[*current_card_id / 2].cards[*current_card_id % 2];
+            else
+                current_card = &board.cards[*current_card_id - 2 * players.size()];
 
-        // 2. Show a simple window that we create ourselves. We use a Begin/End pair to create a named window.
-        {
-            static float f = 0.0f;
-            static int counter = 0;
+            if (*current_card_id < 2 * players.size()) {
+                ImGui::Text(
+                    "Select card %d for player %d", 
+                    (int)(*current_card_id) % 2,
+                    (int)(*current_card_id) / 2
+                );
+            } else {
+                ImGui::Text(
+                    "Select card %d on the table",
+                    (int)(*current_card_id) - 2 * (int)players.size()
+                );
+            }
+            bool known = current_card->rank >= 0;
+            bool prev_known = known;
+            ImGui::Checkbox("Known", &known); 
+            if (!known) {
+                *current_card = {};
+            } else if (!prev_known) {
+                *current_card = { 0, Suit::Clubs };
+            }
 
-            ImGui::Begin("Hello, world!");                          // Create a window called "Hello, world!" and append into it.
+            if (current_card->rank >= 0) {
+                int rank = current_card->rank + 2;
+                ImGui::SliderInt(
+                    "Card power",
+                    &rank,
+                    2, 14,
+                    "%d",
+                    ImGuiSliderFlags_AlwaysClamp
+                );
+                current_card->rank = rank - 2;
 
-            ImGui::Text("This is some useful text.");               // Display some text (you can use a format strings too)
-            ImGui::Checkbox("Demo Window", &show_demo_window);      // Edit bools storing our window open/close state
-            ImGui::Checkbox("Another Window", &show_another_window);
-
-            ImGui::SliderFloat("float", &f, 0.0f, 1.0f);            // Edit 1 float using a slider from 0.0f to 1.0f
-            ImGui::ColorEdit3("clear color", (float*)&clear_color); // Edit 3 floats representing a color
-
-            if (ImGui::Button("Button"))                            // Buttons return true when clicked (most widgets return true when edited/activated)
-                counter++;
-            ImGui::SameLine();
-            ImGui::Text("counter = %d", counter);
-
-            ImGui::Text("Application average %.3f ms/frame (%.1f FPS)", 1000.0f / io.Framerate, io.Framerate);
-            ImGui::End();
+                const int current_suit = (int)current_card->suit;
+                if (ImGui::BeginCombo("Card suit", suit_names[current_suit])) {
+                    for (size_t i = 0; i < 4; i++) {
+                        if (ImGui::Selectable(suit_names[i], i == current_suit)) {
+                            current_card->suit = (Suit)i;
+                        }
+                    }
+                    ImGui::EndCombo();
+                }
+            }
         }
-
-        // 3. Show another simple window.
-        if (show_another_window)
+        
         {
-            ImGui::Begin("Another Window", &show_another_window);   // Pass a pointer to our bool variable (the window will have a closing button that will clear the bool when clicked)
-            ImGui::Text("Hello from another window!");
-            if (ImGui::Button("Close Me"))
-                show_another_window = false;
+            ImGui::Begin("Controls");
+
+            int playerCount = players.size();
+            ImGui::SliderInt("Player count", &playerCount, 2, 6, "%d", ImGuiSliderFlags_AlwaysClamp);
+            players.resize(playerCount);
+            std::optional<const char *> error;
+            if (ImGui::Button("Calculate chances")) {
+                if (validateState()) {
+                    error = Controller::Evaluate(board, players);
+                    board_has_values = !error.has_value();
+                } else {
+                    board_has_values = false;
+                }
+            }
+            if (error.has_value())
+                current_error = *error;
+
+            if (strlen(current_error) > 0) {
+                ImGui::Text("Error: %s", current_error);
+            }
+            if (board_has_values) {
+                for (size_t i = 0; i < players.size(); i++) {
+                    const auto &stats = players[i].stats;
+                    ImGui::Text("Player %d results:", (int)i);
+                    double winChance = (double)stats.wins / (double)stats.total;
+                    double tieChance = (double)stats.ties / (double)stats.total;
+                    ImGui::Text("Win Chance: %lf", winChance);
+                    ImGui::Text("Tie Chance: %lf", tieChance);
+                    ImGui::NewLine();
+                }
+            }
             ImGui::End();
         }
 
@@ -190,13 +310,39 @@ int main(int, char**)
         glViewport(0, 0, display_w, display_h);
         glClearColor(clear_color.x * clear_color.w, clear_color.y * clear_color.w, clear_color.z * clear_color.w, clear_color.w);
         glClear(GL_COLOR_BUFFER_BIT);
-        ImGui_ImplOpenGL3_RenderDrawData(ImGui::GetDrawData());
+        glm::vec2 scr_size(display_w, display_h);
+        atlas.scale = (scr_size * card_size_screen_portion / card_size).x;
+        table.m_Size = scr_size;
 
+        table.Render(0, 0, scr_size, glm::vec2(0, 0));
+        current_card_size = card_size * atlas.scale;
+
+        const auto renderCard = [&](Card card, glm::vec2 pos) {
+            int row, column;
+            if (card.rank >= 0) {
+                column = card.rank;
+                row = (int)card.suit;
+            } else {
+                column = 13;
+                row = 2;
+            }
+            atlas.Render(
+                row, column, scr_size,
+                pos * scr_size
+            );
+        };
+        for (size_t i = 0; i < players.size(); i++) {
+            for (size_t j = 0; j < 2; j++) {
+                renderCard(players[i].cards[j], calcCardPos(i, j));
+            }
+        }
+        for (size_t i = 0; i < 5; i++) {
+            renderCard(board.cards[i], calcCardPos(-1, i));
+        }
+        ImGui_ImplOpenGL3_RenderDrawData(ImGui::GetDrawData());
         glfwSwapBuffers(window);
+        glfwPollEvents();
     }
-#ifdef __EMSCRIPTEN__
-    EMSCRIPTEN_MAINLOOP_END;
-#endif
 
     // Cleanup
     ImGui_ImplOpenGL3_Shutdown();
@@ -210,6 +356,5 @@ int main(int, char**)
     test();
     test_preflop();
 #endif
-
     return 0;
 }

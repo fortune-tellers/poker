@@ -2,6 +2,8 @@
 #include "poker.hpp"
 
 #include <algorithm>
+#include <optional>
+#include <string>
 
 void Controller::evaluateRound(std::vector<Player>& players, const std::vector<int>& handStrengths) {
     int numPlayers = players.size();
@@ -9,23 +11,24 @@ void Controller::evaluateRound(std::vector<Player>& players, const std::vector<i
     int winnerCount = std::count(handStrengths.begin(), handStrengths.end(), minStrength);
     
     for (int i = 0; i < numPlayers; i++) {
-        players[i].playerStats.total++;
+        players[i].stats.total++;
 
         if (handStrengths[i] == minStrength) {
             if (winnerCount > 1) {
-                players[i].playerStats.ties++;
+                players[i].stats.ties++;
             } else {
-                players[i].playerStats.wins++;
+                players[i].stats.wins++;
             }        
         } else {
-            players[i].playerStats.losses++;
+            players[i].stats.losses++;
         }
     }
 }
 
 bool getCardsInGame(Board &board, std::vector<Player> &players, uint64_t &cards_in_game) {
-    cards_in_game = 0;
-    for(int i = 0; i < static_cast<int>(board.stage); i++){
+    std::cout << cards_in_game << std::endl;
+    for (int i = 0; i < static_cast<int>(board.stage); i++) {
+        std::cout << board.cards[i].getOrder() << std::endl;
         if (cards_in_game & (1ll << board.cards[i].getOrder())) {
             std::cout << "ERROR, board card collision" << std::endl;
             return false;
@@ -33,30 +36,25 @@ bool getCardsInGame(Board &board, std::vector<Player> &players, uint64_t &cards_
 
         cards_in_game |= (1ll << board.cards[i].getOrder());
     }
-    for(int i = 0; i < players.size(); i++){
-        if (cards_in_game & (1ll << players[i].cards[0].getOrder())) {
-            std::cout << "ERROR, player card collision" << std::endl;
-            return false;
+    for (int i = 0; i < players.size(); i++) {
+        for (int j = 0; j < 2; j++) {
+            if (cards_in_game & (1ll << players[i].cards[j].getOrder())) {
+                return false;
+            }
+            cards_in_game |= (1ll << players[i].cards[j].getOrder());
         }
-        cards_in_game |= (1ll << players[i].cards[0].getOrder());
-        
-        if (cards_in_game & (1ll << players[i].cards[1].getOrder())) {
-            std::cout << "ERROR, player card collision" << std::endl;
-            return false;
-        }
-        cards_in_game |= (1ll << players[i].cards[1].getOrder());
     }
     return true;
 }
 
-void Controller::Evaluate(Board &board, std::vector<Player> &players) {
-    for(auto player: players) {
-        player.playerStats = {0, 0, 0, 0};
+std::optional<const char *> Controller::Evaluate(Board &board, std::vector<Player> &players) {
+    for (auto player: players) {
+        player.stats = {0, 0, 0, 0};
     }
 
-    uint64_t cards_in_game;
+    uint64_t cards_in_game = 0;
     if (!getCardsInGame(board, players, cards_in_game)) {
-        return;
+        return "Player card collision";
     }
 
     std::vector<int> handStrengths(players.size(), 0);
@@ -69,10 +67,10 @@ void Controller::Evaluate(Board &board, std::vector<Player> &players) {
             auto [wins, ties, n] = preFlopEvaluator(hands);
 
             for (int i = 0; i < players.size(); i++) {
-                players[i].playerStats.wins = wins[i];
-                players[i].playerStats.ties = ties[i];
-                players[i].playerStats.losses = n - wins[i] - ties[i];
-                players[i].playerStats.total = n;
+                players[i].stats.wins = wins[i];
+                players[i].stats.ties = ties[i];
+                players[i].stats.losses = n - wins[i] - ties[i];
+                players[i].stats.total = n;
             }
 
             break;
@@ -128,4 +126,5 @@ void Controller::Evaluate(Board &board, std::vector<Player> &players) {
 
             break;
     }
+    return {};
 }
