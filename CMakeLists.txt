@@ -23,7 +23,7 @@ add_library(imgui
     thirdparty/imgui/backends/imgui_impl_opengl3.cpp
     thirdparty/imgui/backends/imgui_impl_opengl3.h
 )
-target_include_directories(imgui PUBLIC thirdparty/imgui thirdparty/glfw/include)
+target_include_directories(imgui PUBLIC thirdparty/imgui thirdparty/glfw/include thirdparty/glm)
 
 add_executable(poker
     src/main.cpp
